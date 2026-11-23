@@ -1,5 +1,5 @@
 /* Puelche — service worker: el juego funciona sin conexión */
-const CACHE = 'puelche-v2';
+const CACHE = 'puelche-v3';
 const FILES = [
   './',
   'index.html',
