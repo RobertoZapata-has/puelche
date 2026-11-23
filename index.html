@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#1a0d2e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Puelche">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Puelche</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Archivo:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: álbum de figuritas de los 90 hecho videojuego: chillón, cromado, con olor a chicle
+   IDEA: la columna del juego es una página del álbum; cada pantalla es una viñeta con borde negro grueso
+   PICTURE: el propio juego, con la portada y las viñetas de Gemini
+   COLOUR and TYPE: violeta noche dominante, atardecer naranja-magenta de apoyo, amarillo onomatopeya; Bangers + Archivo
+   LAYOUT: columna vertical centrada como pantalla de celular, menús y viñetas superpuestos */
+:root{--ink:#120a1f;--yel:#ffd21f;--mag:#e2357a;--org:#ff8a1f;--vio:#3a1a63;--cel:#18a9df;--paper:#fff7e6}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:#0d0618;overflow:hidden;font:16px/1.4 Archivo,system-ui,sans-serif;color:#fff;touch-action:none;user-select:none;-webkit-user-select:none}
+body{background:radial-gradient(circle at 50% 30%,#3a1a63 0,#0d0618 70%)}
+#app{position:absolute;left:50%;top:0;height:100%;transform:translateX(-50%);overflow:hidden;background:#000;box-shadow:0 0 0 4px #000,0 0 60px rgba(226,53,122,.35)}
+canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
+.scr{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:5;padding:max(16px,env(safe-area-inset-top)) 16px max(16px,env(safe-area-inset-bottom))}
+.hidden{display:none!important}
+.bang{font-family:Bangers,Impact,sans-serif;letter-spacing:1.5px;font-weight:400}
+.btn{font:400 24px/1 Bangers,Impact,sans-serif;letter-spacing:1.5px;color:var(--ink);background:var(--yel);border:3px solid var(--ink);border-radius:12px;box-shadow:4px 4px 0 var(--ink);min-height:52px;padding:10px 20px;cursor:pointer;width:100%;max-width:300px;transition:transform .08s}
+.btn:active{transform:translate(3px,3px);box-shadow:1px 1px 0 var(--ink)}
+.btn.mag{background:var(--mag);color:#fff}
+.btn.cel{background:var(--cel);color:#fff}
+.btn.white{background:#fff}
+.btn.small{font-size:19px;min-height:44px;padding:8px 14px}
+.btn:focus-visible{outline:3px solid #fff;outline-offset:3px}
+.halftone{background-color:#2a1248;background-image:radial-gradient(rgba(255,255,255,.07) 1.4px,transparent 1.6px);background-size:9px 9px}
+/* loading */
+#loading{background:#1a0d2e;gap:18px}
+#loading .logo{font-size:64px;color:var(--yel);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 var(--mag)}
+.bar{width:220px;height:16px;border:3px solid #fff;border-radius:10px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--yel)}
+/* menu */
+#menu{justify-content:flex-end;gap:12px;background:#1a0d2e center/cover no-repeat}
+#menu::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(26,13,46,0) 30%,rgba(26,13,46,.15) 50%,rgba(26,13,46,.92) 82%);z-index:-1}
+#menu .title{position:absolute;top:max(22px,env(safe-area-inset-top));left:0;right:0;text-align:center;padding:0 52px}
+#menu .title h1{margin:0;font:400 clamp(58px,17vw,88px)/.9 Bangers,Impact,sans-serif;letter-spacing:4px;color:var(--yel);-webkit-text-stroke:3px var(--ink);text-shadow:5px 5px 0 var(--ink),9px 9px 0 var(--mag);transform:rotate(-4deg)}
+#menu .title p{margin:10px auto 0;display:inline-block;background:var(--ink);color:#fff;font:400 20px/1 Bangers,sans-serif;letter-spacing:2px;padding:6px 14px;transform:rotate(-2deg)}
+#menu .coins{font:400 22px/1 Bangers,sans-serif;letter-spacing:1px;color:var(--yel);text-shadow:2px 2px 0 var(--ink)}
+.row{display:flex;gap:10px;width:100%;max-width:300px}
+.row .btn{flex:1}
+.iconbtn{position:absolute;top:max(12px,env(safe-area-inset-top));right:12px;width:44px;height:44px;border-radius:50%;border:3px solid var(--ink);background:#fff;color:var(--ink);font:700 20px/1 Archivo;cursor:pointer;z-index:6;box-shadow:2px 2px 0 var(--ink)}
+/* levels */
+#levels{gap:10px;justify-content:flex-start;overflow:auto;padding-top:max(24px,env(safe-area-inset-top))}
+#levels h2,#taller h2{margin:0 0 6px;font:400 44px/1 Bangers,sans-serif;letter-spacing:2px;color:var(--yel);-webkit-text-stroke:1.5px var(--ink);text-shadow:3px 3px 0 var(--ink)}
+.lvl{display:flex;align-items:center;gap:12px;width:100%;max-width:340px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:12px;box-shadow:4px 4px 0 var(--ink);padding:8px 12px 8px 8px;cursor:pointer;text-align:left;font:inherit}
+.lvl img{width:58px;height:58px;object-fit:contain;flex:none;filter:drop-shadow(2px 2px 0 rgba(0,0,0,.4))}
+.lvl b{display:block;font:400 22px/1.05 Bangers,sans-serif;letter-spacing:1px}
+.lvl small{font-size:13px;font-weight:700;opacity:.75}
+.lvl[disabled]{opacity:.45;cursor:default}
+.lvl[disabled] img{filter:brightness(0)}
+/* comic */
+#comic{padding:0;justify-content:center}
+#comic .page{position:relative;width:100%;flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:14px 12px}
+#comic .frame{position:relative;width:100%;max-width:640px;background:#fff;padding:6px;border:4px solid var(--ink);box-shadow:7px 7px 0 var(--ink);transform:rotate(-.6deg)}
+#comic .imgwrap{position:relative;overflow:hidden;aspect-ratio:16/9;background:#222;border:2px solid var(--ink)}
+#comic .imgwrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#comic .imgwrap img.on{animation:kb 7s ease-out forwards}
+@keyframes kb{from{transform:scale(1.09) translate(1.5%,1%)}to{transform:scale(1) translate(0,0)}}
+#comic .cap{position:relative;z-index:2;align-self:flex-start;max-width:92%;margin:0 0 -14px 6px;background:#ffe88a;color:var(--ink);border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:8px 12px;font:700 15px/1.35 Archivo,sans-serif;transform:rotate(-1.2deg)}
+#comic .bub{position:relative;z-index:2;align-self:flex-end;max-width:88%;margin:-10px 8px 0 0;background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:22px;padding:10px 14px 10px;font:800 16px/1.3 Archivo,sans-serif;box-shadow:3px 3px 0 var(--ink)}
+#comic .bub::before{content:"";position:absolute;top:-17px;right:34px;border:14px solid transparent;border-bottom:16px solid var(--ink);border-top:0}
+#comic .bub::after{content:"";position:absolute;top:-11px;right:37px;border:11px solid transparent;border-bottom:13px solid #fff;border-top:0}
+#comic .bub.left{align-self:flex-start;margin:-10px 0 0 8px}
+#comic .bub.left::before{right:auto;left:34px}#comic .bub.left::after{right:auto;left:37px}
+#comic .bub em{display:block;font:400 15px/1 Bangers,sans-serif;letter-spacing:1px;color:var(--mag);font-style:normal;margin-bottom:3px}
+#comic .sfx{position:absolute;z-index:3;font:400 clamp(34px,11vw,64px)/1 Bangers,Impact,sans-serif;letter-spacing:2px;color:var(--yel);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 var(--ink),7px 7px 0 var(--mag);pointer-events:none;white-space:nowrap}
+#comic .sfx.on{animation:pop .45s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes pop{from{transform:scale(.2) rotate(var(--r,-8deg));opacity:0}to{transform:scale(1) rotate(var(--r,-8deg));opacity:1}}
+#comic .cin{opacity:0;transform:translateY(8px);transition:opacity .35s,transform .35s}
+#comic .cin.on{opacity:1;transform:none}
+#comic .cbar{display:flex;gap:10px;align-items:center;justify-content:space-between;width:100%;padding:10px 14px max(14px,env(safe-area-inset-bottom));background:rgba(0,0,0,.35)}
+#comic .dots{display:flex;gap:5px;flex-wrap:wrap;justify-content:center}
+#comic .dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.3);border:1.5px solid #000}
+#comic .dots i.on{background:var(--yel)}
+#comic .hint{position:absolute;bottom:4px;left:0;right:0;text-align:center;font-size:13px;opacity:.6}
+#comic .btn{width:auto;max-width:none}
+#comic .ctitle{font:400 30px/1 Bangers,sans-serif;letter-spacing:2px;color:var(--yel);-webkit-text-stroke:1.2px var(--ink);text-shadow:3px 3px 0 var(--ink);margin-bottom:12px;transform:rotate(-2deg)}
+/* game over */
+#over{gap:10px;justify-content:flex-start;padding-top:max(14px,env(safe-area-inset-top));overflow:auto}
+#over .frame{position:relative;width:100%;max-width:520px;border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);background:#fff;padding:5px;transform:rotate(.8deg)}
+#over .frame img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;filter:grayscale(1) contrast(1.15);transition:filter .7s}
+#over .frame img.color{filter:none}
+#over .go{position:absolute;left:50%;top:50%;transform:translate(-50%,-55%) rotate(-7deg);font:400 clamp(40px,11vw,64px)/1 Bangers,Impact,sans-serif;letter-spacing:2px;color:var(--yel);-webkit-text-stroke:3px var(--ink);text-shadow:5px 5px 0 var(--ink),9px 9px 0 var(--mag);white-space:nowrap;animation:pop .5s cubic-bezier(.2,1.6,.4,1) both;--r:-7deg}
+.talk{display:flex;gap:10px;align-items:flex-end;width:100%;max-width:520px}
+.talk .face{width:84px;height:84px;flex:none;border:3px solid var(--ink);border-radius:12px;background:var(--cel) center/cover;box-shadow:3px 3px 0 var(--ink)}
+.talk .say{flex:1;background:#fff;color:var(--ink);border:3px solid var(--ink);border-radius:18px;padding:10px 12px;font:800 16px/1.3 Archivo;position:relative;box-shadow:3px 3px 0 var(--ink)}
+.talk .say em{display:block;font:400 15px/1 Bangers,sans-serif;letter-spacing:1px;color:var(--mag);font-style:normal;margin-bottom:3px}
+.talk .say::before{content:"";position:absolute;left:-15px;bottom:14px;border:9px solid transparent;border-right:13px solid var(--ink);border-left:0}
+.progress{width:100%;max-width:520px;background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.2);border-radius:12px;padding:10px 12px}
+.track{position:relative;height:14px;background:#2a1248;border:2px solid #000;border-radius:8px;margin:6px 46px 4px 0}
+.track .fill{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--org),var(--mag));border-radius:6px}
+.track .mark{position:absolute;top:-9px;width:28px;height:28px;margin-left:-14px;background:url(a/nave.webp) center/contain no-repeat;transform:rotate(90deg)}
+.track .boss{position:absolute;right:-48px;top:-17px;width:44px;height:44px;background:center/contain no-repeat}
+.progress p{margin:0;font-weight:700;font-size:15px}
+.progress p b{color:var(--yel)}
+.stats{display:flex;gap:16px;justify-content:center;font:400 22px/1 Bangers,sans-serif;letter-spacing:1px}
+.stats span{color:var(--yel)}
+#over .btn.big{font-size:40px;min-height:70px;max-width:320px;background:var(--mag);color:#fff;animation:pulse 1.1s ease-in-out infinite}
+@keyframes pulse{50%{transform:scale(1.04)}}
+/* win */
+#win{gap:12px;background:rgba(18,10,31,.82)}
+#win h2{margin:0;font:400 clamp(46px,14vw,70px)/1 Bangers,sans-serif;letter-spacing:2px;color:var(--yel);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 var(--ink),8px 8px 0 var(--mag);transform:rotate(-4deg);text-align:center}
+#win .card{background:var(--paper);color:var(--ink);border:3px solid var(--ink);box-shadow:5px 5px 0 var(--ink);border-radius:14px;padding:14px 18px;width:100%;max-width:320px}
+#win .card div{display:flex;justify-content:space-between;font:400 24px/1.4 Bangers,sans-serif;letter-spacing:1px}
+#win .card div span{font-variant-numeric:tabular-nums}
+/* taller */
+#taller{justify-content:flex-start;gap:10px;background:#1a0d2e center/cover no-repeat;overflow:auto;padding-top:max(20px,env(safe-area-inset-top))}
+#taller::before{content:"";position:absolute;inset:0;background:rgba(18,10,31,.55);z-index:-1}
+#taller .coins{font:400 26px/1 Bangers,sans-serif;color:var(--yel);text-shadow:2px 2px 0 var(--ink);letter-spacing:1px}
+.ups{display:flex;flex-direction:column;gap:8px;width:100%;max-width:400px}
+.up{display:flex;align-items:center;gap:10px;background:var(--paper);color:var(--ink);border:3px solid var(--ink);border-radius:12px;box-shadow:3px 3px 0 var(--ink);padding:8px 10px}
+.up img{width:44px;height:44px;flex:none}
+.up .t{flex:1}
+.up b{display:block;font:400 20px/1.05 Bangers,sans-serif;letter-spacing:1px}
+.up small{display:block;font-size:13px;font-weight:700;opacity:.8;line-height:1.25}
+.pips{display:flex;gap:4px;margin-top:4px}.pips i{width:16px;height:7px;border:1.5px solid var(--ink);border-radius:3px}.pips i.on{background:var(--mag)}
+.up button{flex:none;font:400 18px/1 Bangers,sans-serif;letter-spacing:1px;min-width:78px;min-height:44px;border:3px solid var(--ink);border-radius:10px;background:var(--yel);color:var(--ink);cursor:pointer;box-shadow:2px 2px 0 var(--ink);white-space:nowrap}
+.up button[disabled]{background:#ccc;opacity:.7;cursor:default}
+/* pause */
+#pause{background:rgba(18,10,31,.8);gap:12px}
+#pause h2{margin:0 0 8px;font:400 64px/1 Bangers,sans-serif;color:var(--yel);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 var(--ink)}
+#pause p{max-width:300px;text-align:center;font-size:14px;opacity:.85;margin:4px 0 0}
+/* fin */
+#fin{gap:16px;text-align:center}
+#fin h2{margin:0;font:400 clamp(70px,24vw,120px)/1 Bangers,sans-serif;color:var(--yel);-webkit-text-stroke:3px var(--ink);text-shadow:6px 6px 0 var(--ink),11px 11px 0 var(--mag);transform:rotate(-5deg)}
+#fin p{max-width:320px;margin:0;font-weight:700}
+.toast{position:absolute;left:50%;bottom:22%;transform:translateX(-50%);background:var(--ink);color:var(--yel);padding:8px 14px;border-radius:10px;font:400 20px/1 Bangers,sans-serif;letter-spacing:1px;z-index:9;pointer-events:none;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="cv"></canvas>
+
+  <div id="loading" class="scr">
+    <div class="logo bang">PUELCHE</div>
+    <div class="bar"><i id="loadbar"></i></div>
+    <div id="loadtxt" style="font-weight:700;font-size:14px;opacity:.8">Cargando figuritas…</div>
+  </div>
+
+  <div id="menu" class="scr hidden">
+    <button class="iconbtn" id="mute" aria-label="Sonido">♪</button>
+    <div class="title"><h1>PUELCHE</h1><p>Enjambre sobre Mendoza</p></div>
+    <div class="coins" id="menucoins"></div>
+    <button class="btn mag" id="bPlay">MODO HISTORIA</button>
+    <div class="row"><button class="btn white small" id="bLevels">NIVEL LIBRE</button><button class="btn cel small" id="bShop">TALLER</button></div>
+    <button class="btn small hidden" id="bInstall">📲 INSTALAR EN EL CEL</button>
+  </div>
+
+  <div id="story" class="scr hidden halftone">
+    <h2 class="bang" style="margin:0 0 4px;text-align:center;font-size:44px;color:var(--yel);-webkit-text-stroke:1.5px var(--ink);text-shadow:3px 3px 0 var(--ink)">MODO HISTORIA</h2>
+    <p id="storytxt" style="margin:0 0 8px;max-width:300px;text-align:center;font-weight:700"></p>
+    <button class="btn mag" id="sCont">SEGUIR</button>
+    <button class="btn white small" id="sNew">DESDE EL PRINCIPIO</button>
+    <button class="btn white small" data-back>VOLVER</button>
+  </div>
+
+  <div id="levels" class="scr hidden halftone">
+    <h2>NIVEL LIBRE</h2>
+    <p style="margin:-2px 0 6px;max-width:320px;text-align:center;font-weight:700;font-size:14px;opacity:.85">Jugá suelto cualquier nivel que ya desbloqueaste en el modo historia. Sin historieta.</p>
+    <div id="lvlist" style="display:flex;flex-direction:column;gap:10px;width:100%;align-items:center"></div>
+    <button class="btn white small" data-back style="margin-top:8px">VOLVER</button>
+  </div>
+
+  <div id="comic" class="scr hidden halftone">
+    <div class="page" id="cpage">
+      <div class="ctitle" id="ctitle"></div>
+      <div class="cap cin" id="ccap"></div>
+      <div class="frame"><div class="imgwrap"><img id="cimg" alt=""></div><div class="sfx" id="csfx"></div></div>
+      <div class="bub cin" id="cbub"></div>
+      <div class="hint">Tocá para seguir</div>
+    </div>
+    <div class="cbar"><button class="btn mag small" id="cskip">OMITIR ⏭</button><div class="dots" id="cdots"></div><button class="btn small" id="cnext">SEGUIR ›</button></div>
+  </div>
+
+  <div id="over" class="scr hidden halftone">
+    <div class="frame"><img id="ovimg" src="" alt=""><div class="go">GAME OVER</div></div>
+    <div class="talk"><div class="face" id="ovface"></div><div class="say" id="ovsay"></div></div>
+    <div class="progress"><div class="track"><div class="fill" id="ovfill"></div><div class="mark" id="ovmark"></div><div class="boss" id="ovboss"></div></div><p id="ovtxt"></p></div>
+    <div class="stats"><div>PUNTOS <span id="ovpts"></span></div><div>MONEDAS <span id="ovcoins"></span></div></div>
+    <button class="btn big" id="ovAgain">¡OTRA!</button>
+    <button class="btn" id="ovCont">CONTINUAR</button>
+    <div class="row"><button class="btn cel small" id="ovShop">TALLER</button><button class="btn white small" id="ovMenu">MENÚ</button></div>
+  </div>
+
+  <div id="win" class="scr hidden">
+    <h2 id="wtitle">¡NIVEL SUPERADO!</h2>
+    <div class="card"><div>Puntos <span id="wpts"></span></div><div>Mejor marca <span id="wbest"></span></div><div>Monedas <span id="wcoins"></span></div></div>
+    <button class="btn mag" id="wNext">SEGUIR LA HISTORIA</button>
+    <div class="row"><button class="btn cel small" id="wShop">TALLER</button><button class="btn white small" id="wMenu">MENÚ</button></div>
+  </div>
+
+  <div id="taller" class="scr hidden">
+    <h2>TALLER DE DON TITO</h2>
+    <div class="coins" id="tcoins"></div>
+    <div class="talk" style="max-width:400px"><div class="face" id="tface"></div><div class="say" id="tsay"></div></div>
+    <div class="ups" id="tups"></div>
+    <button class="btn white small" id="tBack" style="margin-top:4px">LISTO</button>
+  </div>
+
+  <div id="pause" class="scr hidden">
+    <h2>PAUSA</h2>
+    <button class="btn mag" id="pResume">SEGUIR</button>
+    <button class="btn white small" id="pRestart">REINICIAR NIVEL</button>
+    <button class="btn white small" id="pMute">SONIDO: SÍ</button>
+    <button class="btn white small" id="pMenu">MENÚ</button>
+    <p>Arrastrá el dedo para mover la nave: dispara sola. LOOP te hace invencible un segundo. BOMBA limpia la pantalla.</p>
+  </div>
+
+  <div id="ios" class="scr hidden halftone" style="gap:14px;text-align:center">
+    <h2 class="bang" style="margin:0;font-size:42px;color:var(--yel);-webkit-text-stroke:1.5px var(--ink);text-shadow:3px 3px 0 var(--ink)">INSTALAR EN IPHONE</h2>
+    <div style="background:var(--paper);color:var(--ink);border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);border-radius:14px;padding:14px 16px;max-width:320px;font-weight:700;line-height:1.5;text-align:left">
+      1. Abrí esta página en <b>Safari</b>.<br>2. Tocá el botón <b>Compartir</b> (el cuadradito con la flecha para arriba).<br>3. Elegí <b>«Agregar a inicio»</b>.<br>4. Abrí Puelche desde el ícono, como cualquier app.
+    </div>
+    <button class="btn white small" data-back>LISTO</button>
+  </div>
+
+  <div id="fin" class="scr hidden halftone">
+    <h2>¿FIN?</h2>
+    <p>La Puelche salvó a Mendoza… por ahora. Algo se está rompiendo en otro glaciar.</p>
+    <p style="opacity:.8;font-weight:500">Gracias por jugar.</p>
+    <button class="btn mag" id="fMenu">VOLVER AL MENÚ</button>
+  </div>
+</div>
+<script src="game.js"></script>
+</body>
+</html>

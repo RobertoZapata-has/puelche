@@ -1,0 +1,17 @@
+{
+  "name": "Puelche — Enjambre sobre Mendoza",
+  "short_name": "Puelche",
+  "description": "Shooter vertical estilo 1942: la nave Puelche contra insectos gigantes en la Mendoza del 2189.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1a0d2e",
+  "theme_color": "#1a0d2e",
+  "lang": "es-AR",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
