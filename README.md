@@ -8,6 +8,7 @@ Shooter vertical estilo *1942* para el celular. Mendoza, año 2189: los glaciare
 - **Nivel libre:** jugá suelto los niveles que ya desbloqueaste.
 - **4 niveles especiales:** Noche de Zonda, Escolta del Trasandino, Nivel fichín (todo en 8 bits) y Vendimia bonus. Se desbloquean avanzando en la historia.
 - **Desafío del día:** un nivel con una regla distinta cada día, con premio en monedas y racha.
+- **Jugar con un amigo:** online por link, los dos en el mismo cielo, cada uno desde su cel (PeerJS, como Proa del Plata).
 - **Récords:** top 10 en el cel, con iniciales de 3 letras.
 - **Taller de Don Tito:** mejoras permanentes con las monedas que juntás.
 - **Se instala en el cel** (botón «Instalar» en el menú) y funciona sin conexión.

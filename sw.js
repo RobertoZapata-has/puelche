@@ -1,5 +1,5 @@
 /* Puelche — service worker: el juego funciona sin conexión */
-const CACHE = 'puelche-v4';
+const CACHE = 'puelche-v5';
 const FILES = [
   './',
   'index.html',
@@ -95,6 +95,7 @@ self.addEventListener('fetch', e => {
   const req = e.request;
   if (req.method !== 'GET') return;
   const u = new URL(req.url);
+  if (u.origin !== location.origin && !/fonts\.(googleapis|gstatic)\.com$|cdn\.jsdelivr\.net$/.test(u.hostname)) return;
   const fresh = u.origin === location.origin && (u.pathname.endsWith('/') || /\.(html|js|webmanifest)$/.test(u.pathname));
   e.respondWith(caches.open(CACHE).then(async c => {
     const hit = await c.match(req, { ignoreSearch: true });

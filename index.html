@@ -156,6 +156,16 @@ canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 #recname:focus{outline:3px solid var(--yel);outline-offset:3px}
 .recpts{font:400 40px/1 'Luckiest Guy',sans-serif;color:var(--yel);-webkit-text-stroke:1.5px var(--ink);text-shadow:3px 3px 0 var(--ink)}
 .dmsg{margin:0;background:var(--yel);color:var(--ink);border:3px solid var(--ink);border-radius:10px;padding:6px 10px;font-weight:800;font-size:14px;text-align:center;max-width:340px}
+#coop,#coopEnd{gap:12px;overflow:auto}
+#coop .btn.cel:not(.small){font-size:20px}
+.cstat{max-width:340px;text-align:center;font-weight:800;font-size:15px;background:rgba(0,0,0,.4);border:2px solid rgba(255,255,255,.25);border-radius:12px;padding:8px 14px}
+.cstat:empty{display:none}
+.cstat.ok{background:#1f9d55;border-color:#120a1f}
+.clink{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%;max-width:320px}
+.clink input{width:100%;font:700 14px Archivo,sans-serif;padding:10px;border:3px solid var(--ink);border-radius:10px;background:#fff;color:var(--ink);touch-action:manipulation;user-select:text;-webkit-user-select:text}
+.clink a.btn{text-decoration:none;display:flex;align-items:center;justify-content:center;max-width:320px}
+#coopLevels{display:flex;flex-direction:column;gap:8px;width:100%;align-items:center}
+#coopLevels.hidden{display:none!important}
 /* pause */
 #pause{background:rgba(18,10,31,.8);gap:12px}
 #pause h2{margin:0 0 8px;font:400 52px/1 'Luckiest Guy',sans-serif;color:var(--yel);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 var(--ink)}
@@ -182,6 +192,7 @@ canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
     <div class="title"><h1>PUELCHE</h1><p>Enjambre sobre Mendoza</p></div>
     <div class="coins" id="menucoins"></div>
     <button class="btn mag" id="bPlay">MODO HISTORIA</button>
+    <button class="btn cel" id="bCoop">JUGAR CON UN AMIGO</button>
     <div class="row"><button class="btn white small" id="bLevels">NIVEL LIBRE</button><button class="btn cel small" id="bShop">TALLER</button></div>
     <div class="row"><button class="btn small" id="bDaily">DESAFÍO ★</button><button class="btn white small" id="bRecords">RÉCORDS</button></div>
     <button class="btn small hidden" id="bInstall">📲 INSTALAR EN EL CEL</button>
@@ -288,6 +299,28 @@ canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
     <p class="ptxt">Se borran los niveles que desbloqueaste. Tus monedas, las mejoras del taller y los récords se quedan.</p>
     <button class="btn mag" id="cfYes">SÍ, REINICIAR</button>
     <button class="btn white small" id="cfNo">NO, VOLVER</button>
+  </div>
+
+  <div id="coop" class="scr hidden halftone">
+    <h2 class="bigt">JUGAR CON UN AMIGO</h2>
+    <p class="ptxt" id="coopTxt"></p>
+    <div class="cstat" id="coopStatus"></div>
+    <div class="clink hidden" id="coopLinkBox">
+      <input id="coopLink" readonly aria-label="Link de la partida">
+      <div class="row"><button class="btn small" id="coopShare">COMPARTIR</button><button class="btn white small" id="coopCopy">COPIAR</button></div>
+      <a class="btn cel small" id="coopWa" href="#" target="_blank" rel="noopener">MANDAR POR WHATSAPP</a>
+    </div>
+    <div id="coopLevels" class="hidden"></div>
+    <button class="btn mag" id="coopCreate">CREAR PARTIDA</button>
+    <button class="btn white small" id="coopLeave">VOLVER</button>
+  </div>
+
+  <div id="coopEnd" class="scr hidden halftone">
+    <h2 class="bigt" id="ceT"></h2>
+    <div class="recpts" id="ceS"></div>
+    <p class="ptxt" id="ceC"></p>
+    <p class="ptxt" style="opacity:.85">Tu amigo está eligiendo qué hacer…</p>
+    <button class="btn white small" id="ceLeave">SALIR</button>
   </div>
 
   <div id="fin" class="scr hidden halftone">
