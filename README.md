@@ -6,6 +6,9 @@ Shooter vertical estilo *1942* para el celular. Mendoza, año 2189: los glaciare
 
 - **Modo historia:** 5 niveles (viñedos de Luján y Maipú, la ciudad, el dique Potrerillos, los Caracoles de Villavicencio y el glaciar del Aconcagua) con historieta estilo álbum de figuritas de los 90 entre nivel y nivel.
 - **Nivel libre:** jugá suelto los niveles que ya desbloqueaste.
+- **4 niveles especiales:** Noche de Zonda, Escolta del Trasandino, Nivel fichín (todo en 8 bits) y Vendimia bonus. Se desbloquean avanzando en la historia.
+- **Desafío del día:** un nivel con una regla distinta cada día, con premio en monedas y racha.
+- **Récords:** top 10 en el cel, con iniciales de 3 letras.
 - **Taller de Don Tito:** mejoras permanentes con las monedas que juntás.
 - **Se instala en el cel** (botón «Instalar» en el menú) y funciona sin conexión.
 
