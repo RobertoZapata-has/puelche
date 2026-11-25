@@ -122,6 +122,15 @@ canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 #win .card div span{font-variant-numeric:tabular-nums}
 /* taller */
 #taller{justify-content:flex-start;gap:10px;background:#1a0d2e center/cover no-repeat;overflow:auto;padding-top:max(20px,env(safe-area-inset-top))}
+#hangar{justify-content:flex-start;gap:10px;background:#1a0d2e center/cover no-repeat;overflow:auto;padding-top:max(20px,env(safe-area-inset-top))}
+#hangar::before{content:"";position:absolute;inset:0;background:rgba(18,10,31,.6);z-index:-1}
+#hangar .coins{font:400 24px/1 'Luckiest Guy',sans-serif;color:var(--yel);text-shadow:2px 2px 0 var(--ink);letter-spacing:1px}
+.step{display:flex;align-items:center;gap:6px;flex:none}
+.step button{width:40px;min-width:0!important;height:44px;padding:0;border:3px solid var(--ink);border-radius:10px;background:var(--yel);color:var(--ink);font:400 24px/1 'Luckiest Guy',sans-serif;cursor:pointer;box-shadow:2px 2px 0 var(--ink)}
+.step button[data-m]{background:#fff}
+.step button[disabled]{opacity:.35;cursor:default}
+.step span{min-width:18px;text-align:center;font:400 22px/1 'Luckiest Guy',sans-serif}
+.btn[disabled]{opacity:.5;cursor:default;animation:none}
 #taller::before{content:"";position:absolute;inset:0;background:rgba(18,10,31,.55);z-index:-1}
 #taller .coins{font:400 26px/1 'Luckiest Guy',sans-serif;color:var(--yel);text-shadow:2px 2px 0 var(--ink);letter-spacing:1px}
 .ups{display:flex;flex-direction:column;gap:8px;width:100%;max-width:400px}
@@ -249,7 +258,19 @@ canvas{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
     <div class="coins" id="tcoins"></div>
     <div class="talk" style="max-width:400px"><div class="face" id="tface"></div><div class="say" id="tsay"></div></div>
     <div class="ups" id="tups"></div>
+    <p class="ptxt" style="font-size:13px;opacity:.9;max-width:380px">Escudo, disparo doble, misiles, bombas, loops y vidas se compran en el hangar, antes de cada nivel.</p>
     <button class="btn white small" id="tBack" style="margin-top:4px">LISTO</button>
+  </div>
+
+  <div id="hangar" class="scr hidden">
+    <h2 class="bigt">HANGAR</h2>
+    <p class="ptxt" id="hgLv"></p>
+    <div class="coins" id="hgCoins"></div>
+    <div class="talk" style="max-width:400px"><div class="face" id="hgFace"></div><div class="say" id="hgSay"></div></div>
+    <div class="ups" id="hgList"></div>
+    <p class="ptxt" style="font-size:13px;opacity:.9">Lo que comprás te dura hasta que te bajen. Al terminar el nivel, se termina.</p>
+    <button class="btn mag" id="hgGo">¡A VOLAR!</button>
+    <button class="btn white small" id="hgBack">VOLVER</button>
   </div>
 
   <div id="pause" class="scr hidden">
