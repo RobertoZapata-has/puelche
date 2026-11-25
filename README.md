@@ -4,9 +4,9 @@ Shooter vertical estilo *1942* para el celular. Mendoza, año 2189: los glaciare
 
 **Jugar:** https://robertozapata-has.github.io/puelche/
 
-- **Modo historia:** 5 niveles (viñedos de Luján y Maipú, la ciudad, el dique Potrerillos, los Caracoles de Villavicencio y el glaciar del Aconcagua) con historieta estilo álbum de figuritas de los 90 entre nivel y nivel.
+- **Modo historia:** 7 niveles de 3 partes cada uno, con mini jefes y jefe final: viñedos de Luján y Maipú, la ciudad, la noche de Zonda, el dique Potrerillos, los Caracoles de Villavicencio, la escolta del Trasandino y el glaciar del Aconcagua. Historieta estilo álbum de figuritas de los 90 entre nivel y nivel.
 - **Nivel libre:** jugá suelto los niveles que ya desbloqueaste.
-- **4 niveles especiales:** Noche de Zonda, Escolta del Trasandino, Nivel fichín (todo en 8 bits) y Vendimia bonus. Se desbloquean avanzando en la historia.
+- **Vendimia bonus:** nivel especial sin balas: buscá las uvas y esquivá los cajones de dinamita.
 - **Desafío del día:** un nivel con una regla distinta cada día, con premio en monedas y racha.
 - **Jugar con un amigo:** online por link, los dos en el mismo cielo, cada uno desde su cel (PeerJS, como Proa del Plata).
 - **Récords:** top 10 en el cel, con iniciales de 3 letras.
@@ -15,7 +15,7 @@ Shooter vertical estilo *1942* para el celular. Mendoza, año 2189: los glaciare
 
 ## Cómo se juega
 
-Arrastrá el dedo en cualquier parte de la pantalla para mover la nave: dispara sola. **LOOP** te hace invencible un segundo; **BOMBA** limpia la pantalla. En la compu: flechas para mover, espacio para el loop, B para la bomba y P para pausa.
+Arrastrá el dedo en cualquier parte de la pantalla para mover la nave: dispara sola. **LOOP** te hace invencible un segundo; **BOMBA** sale disparada y explota adelante. En la compu: flechas para mover, espacio para el loop, B para la bomba y P para pausa.
 
 ## Archivos
 

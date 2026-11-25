@@ -1,5 +1,5 @@
 /* Puelche — service worker: el juego funciona sin conexión */
-const CACHE = 'puelche-v5';
+const CACHE = 'puelche-v6';
 const FILES = [
   './',
   'index.html',
@@ -17,6 +17,7 @@ const FILES = [
   'a/bicho-mosquito.webp',
   'a/bicho-oruga.webp',
   'a/bicho-polilla.webp',
+  'a/bomba.webp',
   'a/cara-bichi-derrota.webp',
   'a/cara-bichi.webp',
   'a/cara-chispa-derrota.webp',
@@ -32,13 +33,16 @@ const FILES = [
   'a/entre-2-01.webp',
   'a/entre-2-02.webp',
   'a/entre-2-03.webp',
+  'a/entre-2b.webp',
   'a/entre-3-01.webp',
   'a/entre-3-02.webp',
   'a/entre-3-03.webp',
+  'a/entre-3b.webp',
   'a/entre-4-01.webp',
   'a/entre-4-02.webp',
   'a/entre-4-03.webp',
-  'a/especial-fichin.webp',
+  'a/entre-5.webp',
+  'a/entre-6.webp',
   'a/especial-trasandino.webp',
   'a/especial-vendimia.webp',
   'a/especial-zonda.webp',
@@ -63,6 +67,7 @@ const FILES = [
   'a/jefe-5-reina.webp',
   'a/jefe-zonda.webp',
   'a/luckiest-guy.woff2',
+  'a/mina-vendimia.webp',
   'a/nave.webp',
   'a/portada.webp',
   'a/prologo-01.webp',

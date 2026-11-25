@@ -29,8 +29,15 @@ layout();
 
 /* ---------- Save ---------- */
 const SAVE_KEY = 'puelche-save-v1';
-let S = { unlocked: 1, coins: 0, up: {}, best: [0, 0, 0, 0, 0], seen: {}, beaten: false, mute: false };
+let S = { unlocked: 1, coins: 0, up: {}, best: [0, 0, 0, 0, 0, 0, 0, 0], seen: {}, beaten: false, mute: false };
 try { const s = JSON.parse(localStorage.getItem(SAVE_KEY) || 'null'); if (s) S = Object.assign(S, s); } catch (e) {}
+if (!S.v || S.v < 2) {
+  const MAP = [0, 1, 3, 4, 6, 2, 5, -1, 7], ob = S.best || [], nb = [0, 0, 0, 0, 0, 0, 0, 0];
+  ob.forEach((v, i) => { if (MAP[i] >= 0) nb[MAP[i]] = v || 0; });
+  S.best = nb; S.unlocked = [1, 1, 2, 4, 5, 7][Math.min(5, S.unlocked || 1)]; if (S.beaten) S.unlocked = 7;
+  if (S.up && S.up.canon > 1) S.up.canon = 1; S.v = 2;
+  try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {}
+}
 const save = () => { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} };
 
 /* ---------- Audio (sintetizado) ---------- */
@@ -148,7 +155,7 @@ const SPRITES = ['nave', 'bicho-avispa', 'bicho-escarabajo', 'bicho-langosta', '
   'jefe-1-madre-polilla', 'jefe-2-gran-langosta', 'jefe-3-libelula', 'jefe-4-escarabajo', 'jefe-5-reina',
   'cara-chispa', 'cara-tito', 'cara-bichi', 'cara-ozan', 'cara-reina', 'pw-doble', 'pw-escudo', 'pw-misil', 'pw-vida', 'pw-bomba',
   'fondo-1-vinedos', 'fondo-2-ciudad', 'fondo-3-potrerillos', 'fondo-4-caracoles', 'fondo-5-glaciar',
-  'jefe-zonda', 'tren', 'uva', 'uva-dorada', 'fondo-zonda', 'fondo-trasandino', 'fondo-vendimia'];
+  'jefe-zonda', 'tren', 'uva', 'uva-dorada', 'bomba', 'mina-vendimia', 'fondo-zonda', 'fondo-trasandino', 'fondo-vendimia'];
 const url = n => 'a/' + n + '.webp';
 function loadImg(n) {
   return new Promise(res => { const i = new Image(); i.onload = () => { IMG[n] = i; res(i); }; i.onerror = () => res(null); i.src = url(n); });
@@ -194,27 +201,28 @@ const ET = {
   avispa: { img: 'bicho-avispa', w: 58, hp: 5, sc: 220, move: 'hover', spd: 170, shoot: 1.0, flap: 0.12 },
 };
 const LEVELS = [
-  { name: 'Viñedos de Luján y Maipú', bg: 'fondo-1-vinedos', len: 70, mix: { polilla: 5, mosquito: 3, oruga: 2 }, tint: 'rgba(40,10,40,.12)' },
-  { name: 'Mendoza 2189', bg: 'fondo-2-ciudad', len: 75, mix: { langosta: 5, polilla: 3, mosquito: 3, oruga: 1 }, tint: 'rgba(40,10,60,.18)' },
-  { name: 'Dique Potrerillos', bg: 'fondo-3-potrerillos', len: 80, mix: { mosquito: 4, libelula: 4, langosta: 2 }, tint: 'rgba(30,10,60,.14)' },
-  { name: 'Caracoles de Villavicencio', bg: 'fondo-4-caracoles', len: 85, mix: { escarabajo: 3, langosta: 3, libelula: 2, oruga: 2, mosquito: 2 }, tint: 'rgba(40,10,40,.14)' },
-  { name: 'Glaciar del Aconcagua', bg: 'fondo-5-glaciar', len: 90, mix: { avispa: 5, libelula: 2, escarabajo: 2, mosquito: 2, langosta: 2 }, tint: 'rgba(20,10,60,.22)' },
-  { name: 'Noche de Zonda', bg: 'fondo-zonda', len: 75, mix: { polilla: 4, langosta: 4, escarabajo: 2, mosquito: 2 }, tint: 'rgba(0,0,0,0)', sp: 'zonda', dl: 2, unlock: 3, icon: 'jefe-zonda' },
-  { name: 'Escolta del Trasandino', bg: 'fondo-trasandino', len: 70, mix: { langosta: 4, mosquito: 4, libelula: 3, avispa: 2 }, tint: 'rgba(30,10,40,.1)', sp: 'tren', dl: 2, unlock: 4, noBoss: 1, icon: 'tren' },
-  { name: 'Nivel fichín', bg: 'fondo-2-ciudad', len: 80, mix: { polilla: 2, langosta: 3, mosquito: 3, libelula: 2, escarabajo: 1, avispa: 2, oruga: 1 }, tint: 'rgba(0,0,0,0)', sp: 'fichin', dl: 3, unlock: 5, icon: 'nave' },
-  { name: 'Vendimia bonus', bg: 'fondo-vendimia', len: 45, mix: {}, tint: 'rgba(0,0,0,0)', sp: 'vendimia', dl: 0, unlock: 2, noBoss: 1, icon: 'uva-dorada' },
+  { name: 'Viñedos de Luján y Maipú', bg: 'fondo-1-vinedos', len: 70, dl: 0, mus: 'l0', mix: { polilla: 5, mosquito: 3, oruga: 2 }, minis: ['polilla', 'mosquito'], tint: 'rgba(40,10,40,.12)' },
+  { name: 'Mendoza 2189', bg: 'fondo-2-ciudad', len: 75, dl: 1, mus: 'l1', mix: { langosta: 5, polilla: 3, mosquito: 3, oruga: 1 }, minis: ['langosta', 'polilla'], tint: 'rgba(40,10,60,.18)' },
+  { name: 'Noche de Zonda', bg: 'fondo-zonda', len: 72, dl: 2, mus: 'l5', mix: { polilla: 4, langosta: 4, escarabajo: 2, mosquito: 2 }, minis: ['polilla', 'escarabajo'], tint: 'rgba(0,0,0,0)', sp: 'zonda' },
+  { name: 'Dique Potrerillos', bg: 'fondo-3-potrerillos', len: 80, dl: 2, mus: 'l2', mix: { mosquito: 4, libelula: 4, langosta: 2 }, minis: ['libelula', 'mosquito'], tint: 'rgba(30,10,60,.14)' },
+  { name: 'Caracoles de Villavicencio', bg: 'fondo-4-caracoles', len: 85, dl: 3, mus: 'l3', mix: { escarabajo: 3, langosta: 3, libelula: 2, oruga: 2, mosquito: 2 }, minis: ['escarabajo', 'libelula'], tint: 'rgba(40,10,40,.14)' },
+  { name: 'Escolta del Trasandino', bg: 'fondo-trasandino', len: 65, dl: 3, mus: 'l6', mix: { langosta: 4, mosquito: 4, libelula: 3, avispa: 2 }, minis: ['langosta', 'avispa'], tint: 'rgba(30,10,40,.1)', sp: 'tren', noBoss: 1, icon: 'tren' },
+  { name: 'Glaciar del Aconcagua', bg: 'fondo-5-glaciar', len: 90, dl: 4, mus: 'l4', mix: { avispa: 5, libelula: 2, escarabajo: 2, mosquito: 2, langosta: 2 }, minis: ['avispa', 'escarabajo'], tint: 'rgba(20,10,60,.22)' },
+  { name: 'Vendimia bonus', bg: 'fondo-vendimia', len: 45, dl: 0, mus: 'l8', mix: {}, tint: 'rgba(0,0,0,0)', sp: 'vendimia', unlock: 2, noBoss: 1, parts: 1, icon: 'uva-dorada' },
 ];
-const avail = i => i < 5 ? i < S.unlocked : S.unlocked >= LEVELS[i].unlock;
-const levelIcon = i => LEVELS[i].icon || BOSSES[i].img;
+const NSTORY = 7, VEND = 7;
+const parts = L => L.parts || 3;
+const MININAME = { polilla: 'Polilla Gigante', mosquito: 'Mosquito Gigante', langosta: 'Langosta Gigante', libelula: 'Libélula Gigante', escarabajo: 'Escarabajo Gigante', avispa: 'Avispa Gigante' };
+const avail = i => i < NSTORY ? i < S.unlocked : S.unlocked >= LEVELS[i].unlock;
+const levelIcon = i => LEVELS[i].icon || (BOSSES[i] ? BOSSES[i].img : 'nave');
 const BOSSES = [
-  { id: 'madre', img: 'jefe-1-madre-polilla', name: 'la Madre Polilla', w: 250, hp: 450, line: 'Es la Madre Polilla. Apuntale al cuerpo: las alas son puro polvo.' },
-  { id: 'langosta', img: 'jefe-2-gran-langosta', name: 'la Gran Langosta', w: 220, hp: 600, line: 'La Gran Langosta embiste. Cuando titile, ¡correte para el costado!' },
-  { id: 'libelula', img: 'jefe-3-libelula', name: 'la Libélula Acorazada', w: 240, hp: 760, line: 'La Libélula Acorazada es rapidísima. Seguila y no pares de disparar.' },
-  { id: 'escarabajo', img: 'jefe-4-escarabajo', name: 'el Escarabajo Titán', w: 230, hp: 980, line: 'El Escarabajo Titán tiene grietas en el caparazón. ¡Ahí es donde duele!' },
-  { id: 'reina', img: 'jefe-5-reina', name: 'La Reina', w: 262, hp: 1400, line: 'Es ella. Si cae La Reina, cae el enjambre. Suerte, Chispa.' },
-  { id: 'zonda', img: 'jefe-zonda', name: 'el Torbellino', w: 240, hp: 900, spin: 1, line: 'Es un torbellino vivo. Te chupa para adentro: ¡no te le acerques!' },
+  { id: 'madre', img: 'jefe-1-madre-polilla', name: 'la Madre Polilla', w: 250, hp: 340, line: 'Es la Madre Polilla. Apuntale al cuerpo: las alas son puro polvo.' },
+  { id: 'langosta', img: 'jefe-2-gran-langosta', name: 'la Gran Langosta', w: 220, hp: 450, line: 'La Gran Langosta embiste. Cuando titile, ¡correte para el costado!' },
+  { id: 'zonda', img: 'jefe-zonda', name: 'el Torbellino', w: 240, hp: 620, spin: 1, line: 'Es un torbellino vivo. Te chupa para adentro: ¡no te le acerques!' },
+  { id: 'libelula', img: 'jefe-3-libelula', name: 'la Libélula Acorazada', w: 240, hp: 640, line: 'La Libélula Acorazada es rapidísima. Seguila y no pares de disparar.' },
+  { id: 'escarabajo', img: 'jefe-4-escarabajo', name: 'el Escarabajo Titán', w: 230, hp: 760, line: 'El Escarabajo Titán tiene grietas en el caparazón. ¡Ahí es donde duele!' },
   null,
-  { id: 'langosta', img: 'jefe-2-gran-langosta', name: 'la Langosta de 8 bits', w: 220, hp: 800, line: '¡Bichi! ¿Qué tocaste? ¡Hasta la langosta quedó pixelada!' },
+  { id: 'reina', img: 'jefe-5-reina', name: 'La Reina', w: 262, hp: 1050, line: 'Es ella. Si cae La Reina, cae el enjambre. Suerte, Chispa.' },
   null,
 ];
 const PW_LINES = {
@@ -234,11 +242,11 @@ const OVER_LINES = {
 };
 const SHOP_LINES = ['Pasá, pasá. Con monedas en mano todo se arregla.', 'Todo esto lo soldé yo, ojo.', 'La Puelche es noble, pero hay que mimarla.', 'En mi época volábamos con menos. Pero bueno, comprá.'];
 const UPS = [
-  { id: 'canon', name: 'Cañones de Don Tito', d: 'Arrancás cada nivel con más disparos.', icon: 'pw-doble', cost: [120, 350] },
+  { id: 'canon', name: 'Cañones de Don Tito', d: 'Arrancás cada nivel con disparo doble.', icon: 'pw-doble', cost: [300] },
   { id: 'blindaje', name: 'Blindaje', d: 'Arrancás con escudo puesto (aguanta 3 golpes).', icon: 'pw-escudo', cost: [220] },
   { id: 'loop', name: 'Loops extra', d: '+1 loop de invencibilidad por nivel.', icon: 'nave', cost: [100, 280] },
   { id: 'misil', name: 'Misiles de arranque', d: '15 segundos de misiles al empezar.', icon: 'pw-misil', cost: [260] },
-  { id: 'iman', name: 'Imán de monedas', d: 'Las monedas vienen solas hacia vos.', icon: 'pw-bomba', cost: [80, 220] },
+  { id: 'iman', name: 'Imán de monedas', d: 'Las monedas y las uvas cercanas vienen solas hacia vos.', icon: 'pw-bomba', cost: [120, 300] },
   { id: 'vida', name: 'Vida extra', d: 'Empezás con una vida más.', icon: 'pw-vida', cost: [500] },
 ];
 const upLv = id => S.up[id] | 0;
@@ -262,25 +270,32 @@ const COMICS = {
     { img: 'entre-1-02', cap: 'Adentro de la Madre Polilla, la doctora encontró algo.', bub: { who: 'DRA. OZÁN', t: 'Este cristal vibra… y la señal viene de la cordillera.' }, sfx: { t: 'VRRRM', x: 60, y: 10, r: 8 } },
     { img: 'entre-1-03', cap: 'Mientras tanto, una manga de langostas avanzaba sobre la ciudad.', bub: { who: 'LA REINA', t: 'Es hora de visitar la ciudad.' } },
   ] },
-  entre2: { title: 'DESPUÉS DE LA CIUDAD', panels: [
+  c2: { title: 'DESPUÉS DE LA CIUDAD', panels: [
     { img: 'entre-2-01', cap: 'La ciudad festejó como nunca.', bub: { who: 'LA GENTE', t: '¡Puel-che! ¡Puel-che! ¡Puel-che!' } },
+    { img: 'entre-2b', cap: 'Pero La Reina no se iba a quedar quieta.', bub: { who: 'LA REINA', t: '¿Festejan? Que se los lleve el viento.' }, sfx: { t: '¡FIUUUU!', x: 6, y: 8, r: -8 } },
+    { img: 'especial-zonda', cap: 'Bajó el Zonda. Con la tierra no se ve nada… y el enjambre aprovecha.', bub: { who: 'CHISPA', t: '¡Luces prendidas, Puelche! ¡Vamos a ciegas!', left: 1 } },
+  ] },
+  c3: { title: 'DESPUÉS DEL ZONDA', panels: [
+    { img: 'entre-3b', cap: 'A la mañana, Mendoza amaneció tapada de tierra.', bub: { who: 'DON TITO', t: '¡Tierra hasta en los tornillos! Ni el Zonda del 2050 fue así.', left: 1 } },
     { img: 'entre-2-02', cap: 'Bichi tenía algo importante que decir.', bub: { who: 'BICHI', t: '¡Toman agua del dique! ¡Así se ponen gigantes!', left: 1 } },
     { img: 'entre-2-03', cap: 'Esa noche, en Potrerillos…', sfx: { t: 'BZZZZZZ', x: 40, y: 8, r: -5 } },
   ] },
-  entre3: { title: 'DESPUÉS DEL DIQUE', panels: [
+  c4: { title: 'DESPUÉS DEL DIQUE', panels: [
     { img: 'entre-3-01', cap: 'La Puelche no salió entera de Potrerillos.', bub: { who: 'BICHI', t: '¡Arriba, Chispa! ¡Arriba!' }, sfx: { t: '¡PUM!', x: 64, y: 8, r: 8 } },
     { img: 'entre-3-02', cap: 'Don Tito llegó de noche, con la camioneta y una caja de herramientas.', bub: { who: 'DON TITO', t: 'Tomá. Me lo dieron cuando volaba los antigranizo. Nunca me falló.', left: 1 } },
     { img: 'entre-3-03', bub: { who: 'DRA. OZÁN', t: 'La señal sale del Aconcagua. Pero el único camino pasa por los Caracoles.', left: 1 } },
   ] },
-  entre4: { title: 'HACIA EL ACONCAGUA', panels: [
+  c5: { title: 'EL PLAN DEL TRASANDINO', panels: [
+    { img: 'entre-5', cap: 'La Dra. Ozán armó un aparato para romper el cristal de la colmena.', bub: { who: 'DRA. OZÁN', t: 'Pesa diez toneladas. La Puelche no lo levanta… pero un tren sí.' } },
+    { img: 'especial-trasandino', cap: 'El Trasandino volvió a andar, rumbo a Puente del Inca.', bub: { who: 'DON TITO', t: 'Cuidame ese tren, nena. Lo esperé toda la vida.' }, sfx: { t: '¡CHUU CHUU!', x: 40, y: 8, r: -6 } },
+  ] },
+  c6: { title: 'HACIA EL ACONCAGUA', panels: [
+    { img: 'entre-6', cap: 'Puente del Inca. La carga llegó entera.', bub: { who: 'CHISPA', t: 'Ahora sí, Reina. Vamos por vos.' } },
     { img: 'entre-4-01', cap: 'Al amanecer, rumbo al techo de América.' },
     { img: 'entre-4-02', cap: 'La Reina intentó recuperar a Bichi.', bub: { who: 'CHISPA', t: '¡Bichi! ¡No la escuches! ¡Quedate conmigo!', left: 1 } },
     { img: 'entre-4-03', cap: 'Bichi eligió su lado.', bub: { who: 'BICHI', t: 'Yo soy de Mendoza. La colmena es por ahí.' } },
   ] },
-  esp5: { title: 'NOCHE DE ZONDA', panels: [{ img: 'especial-zonda', cap: 'Bajó el Zonda. Con la tierra no se ve nada… y el enjambre aprovecha.', bub: { who: 'CHISPA', t: '¡Luces prendidas, Puelche! ¡Vamos a ciegas!', left: 1 }, sfx: { t: '¡FIUUUU!', x: 56, y: 8, r: 6 } }] },
-  esp6: { title: 'ESCOLTA DEL TRASANDINO', panels: [{ img: 'especial-trasandino', cap: 'El Trasandino volvió a andar. Y el enjambre lo quiere frenar.', bub: { who: 'DON TITO', t: 'Cuidame ese tren, nena. Lo esperé toda la vida.' }, sfx: { t: '¡CHUU CHUU!', x: 40, y: 8, r: -6 } }] },
-  esp7: { title: 'NIVEL FICHÍN', panels: [{ img: 'especial-fichin', cap: 'Nunca, pero nunca, toques el botón rojo.', bub: { who: 'BICHI', t: 'Ups… ¿y este botón para qué era?', left: 1 }, sfx: { t: '¡BLIP!', x: 30, y: 62, r: -8 } }] },
-  esp8: { title: 'VENDIMIA BONUS', panels: [{ img: 'especial-vendimia', cap: 'Noche de Vendimia: ¡a juntar todas las uvas antes del amanecer!', bub: { who: 'BICHI', t: '¡Las doradas valen un montón!', left: 1 }, sfx: { t: '¡PUM PUM!', x: 6, y: 8, r: -8 } }] },
+  espV: { title: 'VENDIMIA BONUS', panels: [{ img: 'especial-vendimia', cap: 'Noche de Vendimia: ¡a juntar todas las uvas antes del amanecer!', bub: { who: 'BICHI', t: '¡Ojo con los cajones de dinamita! Y las doradas valen un montón.', left: 1 }, sfx: { t: '¡PUM PUM!', x: 6, y: 8, r: -8 } }] },
   final: { title: 'FINAL', panels: [
     { img: 'final-01', cap: 'La colmena se vino abajo.', sfx: { t: '¡KRAAASH!', x: 22, y: 6, r: -7 } },
     { img: 'final-02', cap: 'Y por primera vez en años, volvió a nevar en la cordillera.' },
@@ -302,40 +317,40 @@ let G = null;
 let PL = [];
 function mkPlayer(i, two) {
   return { i, x: two ? (i ? W * 0.68 : W * 0.32) : W / 2, y: H - 120, vx: 0, alive: true, out: false, deadT: 0, inv: 2, loopT: 0, fireT: 0, misT: 0,
-    loops: 3 + upLv('loop'), shot: 1 + upLv('canon'), shield: upLv('blindaje') ? 3 : 0, shieldT: upLv('blindaje') ? 12 : 0, missileT: upLv('misil') ? 15 : 0, drag: null };
+    loops: 3 + upLv('loop'), shot: Math.min(2, 1 + upLv('canon')), shield: upLv('blindaje') ? 3 : 0, shieldT: upLv('blindaje') ? 12 : 0, missileT: upLv('misil') ? 15 : 0, drag: null };
 }
 const alivePl = () => PL.filter(p => p.alive);
-function newGame(lv, fromT = 0, opt = {}) {
-  const L = LEVELS[lv], two = !!opt.two;
+function newGame(lv, cp = 0, opt = {}) {
+  const L = LEVELS[lv], two = !!opt.two; cp = Math.min(cp | 0, parts(L));
   G = {
     lv, L, dl: L.dl !== undefined ? L.dl : lv, sp: L.sp || null, daily: opt.daily || null, shootMul: 1, bossMul: 1,
-    wind: 0, windT: 4, windTarget: 0, dust: [], grapes: 0, combo: 0, comboT: 0, train: null, trainLost: false, boss: null, t: fromT, scroll: 0, state: 'intro', stateT: 0, running: true, paused: false, mode: opt.mode || 'story', two,
-    score: 0, coinsRun: 0, kills: 0, nextPw: 18, spawnT: 1.5, queue: [], heavy: [0.3, 0.6, 0.85].filter(h => h * L.len > fromT + 3),
-    E: [], EB: [], PB: [], PK: [], FX: [], TX: [], pops: [], popT: 0, banner: null, shake: 0, flash: 0, checkpoint: fromT,
+    wind: 0, windT: 4, windTarget: 0, dust: [], grapes: 0, combo: 0, comboT: 0, train: null, trainLost: false, boss: null, t: 0, part: Math.min(cp, parts(L) - 1), BM: [], warns: [], belowT: rnd(12, 20), scroll: 0, state: 'intro', stateT: 0, running: true, paused: false, mode: opt.mode || 'story', two,
+    score: 0, coinsRun: 0, kills: 0, nextPw: 18, spawnT: 1.5, queue: [], heavy: [0.3, 0.6, 0.85],
+    E: [], EB: [], PB: [], PK: [], FX: [], TX: [], pops: [], popT: 0, banner: null, shake: 0, flash: 0, checkpoint: cp,
     lives: (two ? 5 : 3) + upLv('vida'), bombs: two ? 2 : 1, overT: 0, hurtSaid: 0, bossCheckpoint: false, diedProg: 0,
   };
   PL = two ? [mkPlayer(0, true), mkPlayer(1, true)] : [mkPlayer(0, false)];
-  G.banner = { t1: L.sp ? '¡ESPECIAL!' : 'NIVEL ' + (lv + 1), t2: L.name, life: 2.6, age: 0 };
-  if (L.sp === 'tren') { G.nextPw = 12; const T = PRE.tren || { w: 30, h: 237 }; G.train = { x: W * 0.532, y: H * 0.3, w: T.w, h: T.h, hp: 160, max: 160, flash: 0 }; say('tito', 'Cuidame el tren, nena. Si lo rompen, se terminó.', 3.2); }
+  G.banner = { t1: lv >= NSTORY ? '¡ESPECIAL!' : 'NIVEL ' + (lv + 1), t2: L.name + (parts(L) > 1 ? ' · parte ' + (G.part + 1) + ' de ' + parts(L) : ''), life: 2.6, age: 0 };
+  if (L.sp === 'tren') { G.nextPw = 12; const T = PRE.tren || { w: 30, h: 237 }; G.train = { x: W * 0.5, y: H - T.h - 64, w: T.w, h: T.h, hp: 160, max: 160, flash: 0 }; say('tito', 'Cuidame el tren, nena. Si lo rompen, se terminó.', 3.2); }
   if (L.sp === 'vendimia') { G.heavy = []; G.nextPw = 1e9; say('bichi', '¡A juntar uvas! Las doradas valen diez veces más.', 3.2); }
   if (L.sp === 'zonda') { for (let i = 0; i < 70; i++) G.dust.push({ x: rnd(0, W), y: rnd(0, H), l: rnd(8, 26) }); say('chispa', 'No veo nada… ¡Bichi, avisame por dónde vienen!', 3.2); }
-  if (L.sp === 'fichin') say('bichi', 'Perdón, perdón… ¡no sé cómo se vuelve!', 3);
   if (G.daily) {
     const m = G.daily.mod.id; G.banner = { t1: 'DESAFÍO DEL DÍA', t2: G.daily.mod.t, life: 2.8, age: 0 };
     if (m === 'unavida') G.lives = 0;
     if (m === 'sinmejoras') G.nextPw = 1e9;
     if (m === 'balas') G.shootMul = 0.5;
     if (m === 'jefe') G.bossMul = 2;
-    if (m === 'tanque') PL.forEach(p => { p.shot = 4; p.shield = 0; });
+    if (m === 'tanque') PL.forEach(p => { p.shot = 2; p.shield = 0; });
   }
-  if (fromT >= L.len && !L.noBoss) { G.state = 'bosswarn'; G.stateT = 0; G.t = L.len; G.banner = null; startBossWarn(); }
+  if (cp >= parts(L) && !L.noBoss) { G.state = 'bosswarn'; G.stateT = 0; G.t = L.len; G.banner = null; startBossWarn(); }
   if (BOSSES[lv]) preload([BOSSES[lv].img]); preload(['gameover-caida']);
-  if (lv < 5) { const next = lv < 4 ? 'entre' + (lv + 1) : 'final'; preload(COMICS[next].panels.map(p => p.img)); }
+  if (lv < NSTORY) { const next = lv < NSTORY - 1 ? COMIC_BEFORE[lv + 1] : 'final'; preload(COMICS[next].panels.map(p => p.img)); }
 }
 
 /* ---------- Spawning ---------- */
 function later(d, fn) { G.queue.push({ at: G.stateClock + d, fn }); }
-function diff() { return 1 + G.dl * 0.16 + Math.min(1, G.t / G.L.len) * 0.25; }
+const prog = () => (G.part + Math.min(1, G.t / G.L.len)) / parts(G.L);
+function diff() { return 1 + G.dl * 0.16 + prog() * 0.25; }
 function spawn(k, x, y, o = {}) {
   const t = ET[k];
   const e = Object.assign({ id: ++EID, k, t, x, y, x0: x, y0: y, hp: Math.ceil(t.hp * (1 + G.dl * 0.15)), age: 0, flash: 0, cool: rnd(0.6, 1.6), ph: rnd(0, TAU), dir: 1, r: t.w * 0.34 }, o);
@@ -358,7 +373,7 @@ function pickMix(mix) { let tot = 0; for (const k in mix) tot += mix[k]; let r =
 /* ---------- Bullets ---------- */
 const eShot = (x, y, a, sp, kind = 'e', r = 6) => G.EB.push({ x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, r, kind });
 function nearestPl(x, y) { let best = null, bd = 1e9; for (const p of PL) { if (!p.alive) continue; const d = (p.x - x) ** 2 + (p.y - y) ** 2; if (d < bd) { bd = d; best = p; } } return best; }
-const aimAt = (x, y) => { if (G && G.train && G.train.hp > 0 && Math.random() < 0.3) { const T = G.train; return Math.atan2(T.y + rnd(0.1, 0.9) * T.h - y, T.x - x); } const p = nearestPl(x, y); return p ? Math.atan2(p.y - y, p.x - x) : Math.PI / 2; };
+const aimAt = (x, y) => { const p = nearestPl(x, y); return p ? Math.atan2(p.y - y, p.x - x) : Math.PI / 2; };
 function fan(x, y, a, n, spread, sp, kind) { for (let i = 0; i < n; i++) eShot(x, y, a + (n === 1 ? 0 : (i / (n - 1) - 0.5) * spread), sp, kind); }
 function ring(x, y, n, sp, off = 0, kind) { for (let i = 0; i < n; i++) eShot(x, y, off + i / n * TAU, sp, kind); }
 const bSpeed = () => 160 + G.dl * 16;
@@ -379,15 +394,29 @@ function doLoop(p) { if (!G || !p || G.state === 'dead' || !p.alive || p.loopT >
 function doBomb(p) {
   p = p && p.alive ? p : alivePl()[0];
   if (!G || !p || G.bombs <= 0 || G.state === 'dead') return;
-  G.bombs--; G.flash = 1; G.shake = 14; SFX.bomb(); G.EB.length = 0;
-  G.FX.push({ type: 'ring', x: p.x, y: p.y, age: 0, life: 0.7 });
-  sfxText(W / 2, H * 0.42, '¡KABOOOM!', 60);
-  for (const e of G.E) hurtEnemy(e, 30);
-  if (G.boss && G.boss.st === 'fight') hurtBoss(70);
+  G.bombs--; G.BM.push({ x: p.x, y: p.y - 34, vy: -500, t: 0 }); SFX.loop();
+}
+function detonate(b) {
+  const R = 125; b.gone = 1; SFX.bomb(); G.flash = Math.max(G.flash, 0.35); G.shake = 12;
+  boom(b.x, b.y, 2.4, false); G.FX.push({ type: 'ring', x: b.x, y: b.y, age: 0, life: 0.5, R });
+  sfxText(b.x, b.y - 10, '¡KABOOM!', 40);
+  for (const e of G.E) if ((e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (R + e.r) ** 2) hurtEnemy(e, e.mini ? 45 : 30);
+  if (G.boss && G.boss.st === 'fight' && (G.boss.x - b.x) ** 2 + (G.boss.y - b.y) ** 2 < (R + G.boss.B.w * 0.3) ** 2) hurtBoss(70);
+  G.EB = G.EB.filter(e => (e.x - b.x) ** 2 + (e.y - b.y) ** 2 > R * R);
+}
+function updBombs(dt) {
+  for (const b of G.BM) {
+    b.t += dt; b.y += b.vy * dt; b.vy *= Math.pow(0.35, dt);
+    let hit = b.t > 0.6 || b.y < 70;
+    if (!hit) for (const e of G.E) if (!e.dead && (e.x - b.x) ** 2 + (e.y - b.y) ** 2 < (e.r + 12) ** 2) { hit = true; break; }
+    if (!hit && G.boss && G.boss.st === 'fight' && (G.boss.x - b.x) ** 2 + (G.boss.y - b.y) ** 2 < (G.boss.B.w * 0.3) ** 2) hit = true;
+    if (hit) detonate(b);
+  }
+  G.BM = G.BM.filter(b => !b.gone);
 }
 function addPw(kind, p) {
   SFX.pw();
-  if (kind === 'doble') p.shot = Math.min(4, p.shot + 1);
+  if (kind === 'doble') p.shot = 2;
   else if (kind === 'escudo') { p.shield = 3; p.shieldT = 12; }
   else if (kind === 'misil') p.missileT = 14;
   else if (kind === 'vida') G.lives++;
@@ -400,9 +429,9 @@ function hurtPlayer(p) {
   if (p.shield > 0) { p.shield--; p.inv = 0.25; SFX.shield(); G.FX.push({ type: 'ring', x: p.x, y: p.y, age: 0, life: 0.35, small: 1 }); if (!p.shield) { sfxText(p.x, p.y - 44, '¡CRASH!', 24, '#7ef3ff'); boom(p.x, p.y, 0.7, false); } return; }
   p.alive = false; p.deadT = 1.3; p.drag = null; SFX.die(); boom(p.x, p.y, 2, false); G.shake = 12;
   try { navigator.vibrate && navigator.vibrate(120); } catch (e) {}
-  const hadPw = p.shot > 1 + upLv('canon') || p.missileT > 0; p.shot = 1 + upLv('canon'); p.missileT = 0; p.shield = 0; if (hadPw && G.lives > 0) sfxText(p.x, p.y - 46, '¡SIN PODERES!', 22, '#ff9ad5');
+  const hadPw = p.shot > Math.min(2, 1 + upLv('canon')) || p.missileT > 0; p.shot = Math.min(2, 1 + upLv('canon')); p.missileT = 0; p.shield = 0; if (hadPw && G.lives > 0) sfxText(p.x, p.y - 46, '¡SIN PODERES!', 22, '#ff9ad5');
   if (G.lives > 0) { G.lives--; if (G.hurtSaid++ % 2 === 0) { const l = pick(HURT_LINES); say(l[0], l[1]); } }
-  else { p.out = true; if (!alivePl().length) { G.diedProg = G.boss ? 1 : G.t / G.L.len; G.overT = 1.6; G.state = 'dead'; } else say('bichi', '¡Te quedaste solo! ¡Aguantá!'); }
+  else { p.out = true; if (!alivePl().length) { G.diedProg = G.boss ? 1 : prog(); G.overT = 1.6; G.state = 'dead'; } else say('bichi', '¡Te quedaste solo! ¡Aguantá!'); }
 }
 
 /* ---------- Enemies ---------- */
@@ -411,6 +440,14 @@ function hurtEnemy(e, d) {
   if (e.hp <= 0) killEnemy(e);
 }
 function killEnemy(e) {
+  if (e.mini) {
+    e.dead = true; G.kills++; G.score += 1500 + G.dl * 500; G.EB.length = 0; SFX.big(); G.shake = 14; G.flash = 0.5;
+    for (let i = 0; i < 4; i++) boom(e.x + rnd(-40, 40), e.y + rnd(-30, 30), 2, false);
+    sfxText(e.x, e.y - 20, '¡KAPUM!', 44);
+    for (let i = 0; i < 12; i++) G.PK.push({ kind: 'coin', x: e.x + rnd(-30, 30), y: e.y, vx: rnd(-120, 120), vy: rnd(-200, -60), age: 0 });
+    G.PK.push({ kind: 'pw', pw: pickMix({ doble: PL.every(q => q.shot >= 2) ? 2 : 30, escudo: 20, misil: 20, bomba: 15 }), x: e.x, y: e.y, vx: 0, vy: 45, age: 0 });
+    later(1.3, nextPart); return;
+  }
   e.dead = true; G.kills++; G.score += e.t.sc;
   if (G.dl >= 1 && e.y < H * 0.7 && Math.random() < 0.12 + G.dl * 0.05) fan(e.x, e.y, aimAt(e.x, e.y), 3, 0.5, bSpeed() * 0.8, 'e');
   boom(e.x, e.y, e.t.heavy ? 1.7 : e.t.hp >= 3 ? 1.2 : 0.9);
@@ -420,13 +457,34 @@ function killEnemy(e) {
   const forced = (e.k === 'escarabajo' || e.k === 'oruga') && Math.random() < 0.12;
   if (G.kills >= G.nextPw || forced) {
     if (!forced) G.nextPw = G.kills + (rnd(22, 30) | 0);
-    const wts = G.train ? { doble: 20, escudo: 20, misil: 20, bomba: 10, vida: 3 } : { doble: PL.every(q => q.shot >= 4) ? 4 : 30, escudo: 14, misil: 16, bomba: 10, vida: G.lives < 1 ? 7 : 3 };
+    const wts = G.train ? { doble: 20, escudo: 20, misil: 20, bomba: 10, vida: 3 } : { doble: PL.every(q => q.shot >= 2) ? 4 : 30, escudo: 14, misil: 16, bomba: 10, vida: G.lives < 1 ? 7 : 3 };
     G.PK.push({ kind: 'pw', pw: pickMix(wts), x: e.x, y: e.y, vx: 0, vy: 45, age: 0 });
   }
 }
+const MINI_T = {};
+function miniT(k) { return MINI_T[k] || (MINI_T[k] = Object.assign({}, ET[k], { w: Math.round(ET[k].w * 2.5), img: ET[k].img + '-mini', move: 'mini', sc: 1500, heavy: 1, shoot: 0, ground: 0, flap: (ET[k].flap || 0.05) * 0.6 })); }
 function updEnemy(e, dt) {
   const t = e.t, d = diff(); e.age += dt; e.flash -= dt;
+  if (e.kami) {
+    const T = G.train;
+    if (!T || T.hp <= 0 || e.age < 0.7) e.y += 95 * dt;
+    else { if (e.ty === undefined) e.ty = T.y + rnd(0.15, 0.85) * T.h; const a = Math.atan2(e.ty - e.y, T.x - e.x), sp = Math.min(250 + G.dl * 15, 80 + (e.age - 0.7) * 220); e.x += Math.cos(a) * sp * dt; e.y += Math.sin(a) * sp * dt; e.rot = a - Math.PI / 2; }
+    if (e.y > H + 90) e.gone = true; return;
+  }
+  if (e.rise) {
+    const p = nearestPl(e.x, e.y); e.y -= (150 + G.dl * 12) * dt;
+    if (p && e.y > p.y - 60) e.x += clamp(p.x - e.x, -1, 1) * 70 * dt;
+    if (e.y < -80) e.gone = true; return;
+  }
   switch (t.move) {
+    case 'mini':
+      if (e.age < 1.6) e.y += (e.ty - e.y) * Math.min(1, dt * 2);
+      else {
+        e.x = W / 2 + Math.sin((e.age - 1.6) * 0.8) * W * 0.3; e.y = e.ty + Math.sin(e.age * 1.7) * 14;
+        e.t1 -= dt; if (e.t1 <= 0) { e.t1 = 1.4 / d; fan(e.x, e.y + 20, aimAt(e.x, e.y), 5, 0.9, bSpeed() * 0.9, 'o'); }
+        e.t2 -= dt; if (e.t2 <= 0) { e.t2 = G.train ? 2.6 : 4; if (G.train) kamiWave(2); else ring(e.x, e.y, 12, bSpeed() * 0.7, e.age, 'e'); }
+      }
+      return;
     case 'sine': e.y += t.spd * dt; e.x = e.x0 + Math.sin(e.age * 2.2 + e.ph) * (e.amp || 50); break;
     case 'ground': e.y += G.speed * dt; break;
     case 'swoop': e.x += e.dir * t.spd * dt; e.y = e.y0 + 55 * e.age + 70 * Math.sin(e.age * 1.7); break;
@@ -452,13 +510,37 @@ function updEnemy(e, dt) {
   }
   if (e.y > H + 90 || (e.age > 1.5 && (e.x < -120 || e.x > W + 120)) || e.y < -400) e.gone = true;
 }
+function startMini() {
+  const L = G.L, k = (L.minis && L.minis[G.part]) || 'langosta';
+  G.state = 'mini'; G.stateT = 0; SFX.alarm();
+  G.banner = { t1: '¡MINI JEFE!', t2: MININAME[k], life: 2.4, age: 0, warn: 1 };
+  say('bichi', pick(['¡Uy! ¡Ese es enorme!', '¡Viene uno gigante!', '¡Cuidado, ese es grandote!']), 2.4);
+  later(1.4, () => { if (G.state !== 'mini') return; const T = miniT(k); spawn(k, W / 2, -90, { t: T, mini: 1, r: T.w * 0.32, ty: H * 0.3, t1: 1.5, t2: 3.5, hp: Math.round((150 + G.dl * 45) * (G.part ? 1.35 : 1) * (G.coop ? 1.5 : 1)) }); });
+}
+function nextPart() {
+  if (G.state === 'dead' || G.state === 'won') return;
+  G.part++; G.t = 0; G.checkpoint = G.part; G.heavy = [0.3, 0.6, 0.85]; G.state = 'waves'; G.stateT = 0; G.spawnT = 2.5;
+  G.banner = { t1: 'PARTE ' + (G.part + 1), t2: G.L.name, life: 2.4, age: 0 };
+  if (G.train) { G.train.hp = Math.min(G.train.max, G.train.hp + 40); say('tito', 'Le emparché el tren en la estación. ¡Seguimos!', 2.6); }
+  else say('chispa', pick(['¡Uno menos! ¡Vamos que falta poco!', '¡Ja! Que venga el que sigue.', 'Seguimos, Puelche. ¡Más adelante!']), 2.4);
+}
+function kamiWave(n) {
+  n = n || (rnd(2, 4) | 0);
+  for (let i = 0; i < n; i++) later(i * 0.35, () => { if (G.state === 'won' || G.state === 'dead') return; const k = pick(['mosquito', 'langosta', 'avispa']); spawn(k, rnd(40, W - 40), -40, { kami: 1 }); });
+}
+function belowWave() {
+  const n = rnd(2, 4) | 0, xs = []; for (let i = 0; i < n; i++) xs.push(rnd(40, W - 40));
+  G.warns = xs.map(x => ({ x, t: 1 }));
+  say('bichi', pick(['¡Por abajo! ¡Cuidado!', '¡Abajo, abajo!', '¡Vienen de atrás!']), 2);
+  later(1, () => { if (G.state === 'won' || G.state === 'dead') return; xs.forEach(x => spawn(pick(['mosquito', 'langosta']), x, H + 40, { rise: 1, rot: Math.PI })); });
+}
 
 /* ---------- Boss ---------- */
 function startBossWarn() {
-  G.state = 'bosswarn'; G.stateT = 0; G.bossCheckpoint = true; G.checkpoint = G.L.len;
+  G.state = 'bosswarn'; G.stateT = 0; G.bossCheckpoint = true; G.checkpoint = parts(G.L);
   playMusic('boss'); SFX.alarm(); G.banner = { t1: '¡ATENCIÓN!', t2: 'Se acerca ' + BOSSES[G.lv].name, life: 2.6, age: 0, warn: 1 };
   say('ozan', BOSSES[G.lv].line, 3.4);
-  if (G.lv === 4 || Math.random() < 0.5) setTimeout(() => G && say('reina', pick(['Llegaste lejos, pequeña. Hasta acá.', 'Mi criatura te va a devorar.', '¿Todavía volás? Qué molesta.'])), 3600);
+  if (G.lv === NSTORY - 1 || Math.random() < 0.5) setTimeout(() => G && say('reina', pick(['Llegaste lejos, pequeña. Hasta acá.', 'Mi criatura te va a devorar.', '¿Todavía volás? Qué molesta.'])), 3600);
 }
 function spawnBoss() {
   const B = BOSSES[G.lv]; prep(B.img, B.w);
@@ -516,6 +598,7 @@ function updBoss(dt) {
       if (b.t2 <= 0) { b.t2 = 2.6 / rage; for (let i = 0; i < 6; i++) G.EB.push({ x: rnd(20, W - 20), y: -20 - i * 30, vx: G.wind * 0.6, vy: rnd(120, 180), r: 11, kind: 'r', rot: rnd(0, TAU) }); }
       if (b.t3 <= 0) { b.t3 = 5; spawn('mosquito', b.x - 60, b.y); spawn('mosquito', b.x + 60, b.y); }
       for (const p of PL) if (p.alive && p.loopT <= 0) { const dx = b.x - p.x, dy = b.y - p.y, dd = Math.hypot(dx, dy) || 1, f = 50 * rage; p.x += dx / dd * f * dt; p.y += dy / dd * f * dt * 0.6; }
+      if (hp < 0.34) { if (!b.angry) { b.angry = 1; say('bichi', '¡Está escupiendo bichos! ¡Rematalo!', 2.4); } b.t4 = (b.t4 || 0) - dt; if (b.t4 <= 0) { b.t4 = 2.2; spawn('langosta', b.x - 50, b.y + 20, { dir: -1 }); spawn('langosta', b.x + 50, b.y + 20, { dir: 1 }); spawn('polilla', b.x, b.y + 30, { amp: 60 }); } }
       break; }
     case 'reina': {
       b.x = W / 2 + Math.sin(b.ft * 0.5) * W * 0.22;
@@ -546,7 +629,7 @@ function hurtTrain(d, x, y) {
   if (T.hp <= 0) {
     for (let i = 0; i < 6; i++) boom(T.x + rnd(-14, 14), T.y + T.h * (i / 5), 1.6, i === 0);
     SFX.big(); G.shake = 16; G.trainLost = true; G.EB.length = 0;
-    G.diedProg = G.t / G.L.len; G.overT = 1.9; G.state = 'dead';
+    G.diedProg = prog(); G.overT = 1.9; G.state = 'dead';
   }
 }
 function winSpecial() {
@@ -555,12 +638,14 @@ function winSpecial() {
   else G.banner = { t1: '¡VENDIMIA COMPLETA!', t2: G.grapes + ' racimos juntados', life: 3, age: 0 };
 }
 function grapeWave() {
-  const r = Math.random(), gold = () => Math.random() < 0.1;
-  const add = (x, y) => G.PK.push({ kind: 'uva', gold: gold(), x: clamp(x, 24, W - 24), y, vx: 0, vy: 165, age: rnd(0, 6) });
-  if (r < 0.25) { const x = rnd(40, W - 40); for (let i = 0; i < 6; i++) add(x, -20 - i * 38); }
-  else if (r < 0.45) { const n = 5; for (let i = 0; i < n; i++) add(40 + (W - 80) * i / (n - 1), -20); }
-  else if (r < 0.75) { const cx = rnd(90, W - 90); for (let i = 0; i < 10; i++) add(cx + Math.sin(i * 0.7) * 70, -20 - i * 30); }
-  else { const cx = rnd(100, W - 100); for (let i = 0; i < 4; i++) { add(cx - i * 24, -20 - i * 30); if (i) add(cx + i * 24, -20 - i * 30); } }
+  const r = Math.random(), gold = () => Math.random() < 0.08;
+  const add = (x, y, g) => G.PK.push({ kind: 'uva', gold: g === undefined ? gold() : g, x: clamp(x, 24, W - 24), y, age: rnd(0, 6) });
+  const mine = (x, y) => G.PK.push({ kind: 'mina', x: clamp(x, 26, W - 26), y, age: rnd(0, 6) });
+  if (r < 0.22) { const x = rnd(50, W - 50); for (let i = 0; i < 6; i++) add(x, -20 - i * 40); mine(x + (x < W / 2 ? 70 : -70), -120); return 220; }
+  if (r < 0.42) { const n = 5, m = rnd(0, n) | 0; for (let i = 0; i < n; i++) { const x = 40 + (W - 80) * i / (n - 1); if (i === m) mine(x, -20); else add(x, -20); } return 40; }
+  if (r < 0.64) { const cx = rnd(90, W - 90); for (let i = 0; i < 10; i++) add(cx + Math.sin(i * 0.7) * 70, -20 - i * 34); mine(cx, -170); return 330; }
+  if (r < 0.82) { const cx = rnd(80, W - 80); add(cx, -80, true); mine(cx - 48, -80); mine(cx + 48, -80); mine(cx, -32); mine(cx, -128); return 130; }
+  const cx = rnd(100, W - 100); for (let i = 0; i < 4; i++) { add(cx - i * 26, -20 - i * 34); if (i) add(cx + i * 26, -20 - i * 34); } mine(cx, -70); return 120;
 }
 function pickGrape(k) {
   G.combo = G.comboT > 0 ? Math.min(8, G.combo + 1) : 1; G.comboT = 1.1;
@@ -597,7 +682,7 @@ function drawZonda() {
 function update(dt) {
   const L = G.L;
   G.stateClock = (G.stateClock || 0) + dt;
-  G.speed = G.state === 'boss' || G.state === 'bossdead' ? 38 : 62;
+  G.speed = G.sp === 'vendimia' ? 105 : G.state === 'boss' || G.state === 'bossdead' ? 38 : 62;
   G.scroll += G.speed * dt;
   for (let i = G.queue.length - 1; i >= 0; i--) if (G.queue[i].at <= G.stateClock) { const q = G.queue[i]; G.queue.splice(i, 1); if (G.state !== 'won') q.fn(); }
 
@@ -606,16 +691,17 @@ function update(dt) {
   if (G.state === 'intro' && G.stateT > 2.2) { G.state = 'waves'; G.stateT = 0; }
   if (G.state === 'waves') {
     G.t += dt;
-    if (G.t >= L.len * 0.5 && G.checkpoint < L.len * 0.5) G.checkpoint = L.len * 0.5;
+    if (G.dl >= 1 && G.sp !== 'tren' && G.sp !== 'vendimia') { G.belowT -= dt; if (G.belowT <= 0) { G.belowT = rnd(16, 26) - G.dl; belowWave(); } }
     G.spawnT -= dt;
     if (G.heavy.length && G.t >= G.heavy[0] * L.len) { G.heavy.shift(); say('bichi', pick(WARN_LINES), 2.4); const k1 = pickMix(L.mix); later(1.6, () => formation(k1, true)); later(3.2, () => formation(pickMix(L.mix), false)); G.spawnT = 5; }
-    if (G.spawnT <= 0 && G.sp === 'vendimia') { grapeWave(); G.spawnT = rnd(0.8, 1.25); }
-    if (G.spawnT <= 0) { formation(pickMix(L.mix), false); G.spawnT = Math.max(0.75, 2.0 - G.dl * 0.12 - (G.t / L.len) * 0.6) * rnd(0.85, 1.2); }
-    if (G.t >= L.len) { if (L.noBoss) winSpecial(); else startBossWarn(); }
+    if (G.spawnT <= 0 && G.sp === 'vendimia') { G.spawnT = (grapeWave() + 110) / G.speed; }
+    if (G.spawnT <= 0) { if (G.sp === 'tren' && Math.random() < 0.65) kamiWave(); else formation(pickMix(L.mix), false); G.spawnT = Math.max(0.75, 2.0 - G.dl * 0.12 - (G.t / L.len) * 0.6) * rnd(0.85, 1.2); }
+    if (G.t >= L.len) { if (G.part < parts(L) - 1) startMini(); else if (L.noBoss) winSpecial(); else startBossWarn(); }
   }
   if (G.sp === 'zonda') updZonda(dt);
   if (G.sp === 'vendimia') { G.comboT -= dt; if (G.comboT <= 0) G.combo = 0; }
-  if (G.train) { G.train.flash -= dt; G.train.x = W * 0.532 + Math.sin(G.stateClock * 1.3) * 1.5; }
+  if (G.train) { G.train.flash -= dt; G.train.x = W * 0.5 + Math.sin(G.stateClock * 1.3) * 1.5; }
+  updBombs(dt); for (const w of G.warns) w.t -= dt; G.warns = G.warns.filter(w => w.t > 0);
   if (G.state === 'bosswarn' && G.stateT > 3) { G.state = 'boss'; G.stateT = 0; spawnBoss(); }
   if (G.boss) { updBoss(dt); if (G.boss.gone) { G.boss = null; G.state = 'won'; G.stateT = 0; stopMusic(); SFX.win(); G.banner = { t1: '¡NIVEL SUPERADO!', t2: '', life: 3, age: 0 }; } }
   if (G.state === 'won' && G.stateT > 2.8 && !G.winShown) { G.winShown = 1; finishLevel(); }
@@ -645,8 +731,6 @@ function update(dt) {
       const s = p.shot, pb = (dx, a) => G.PB.push({ x: p.x + dx, y: p.y - 26, vx: Math.sin(a) * 640, vy: -Math.cos(a) * 640, d: 1 });
       pb(-6, 0); pb(6, 0);
       if (s >= 2) { pb(-14, -0.13); pb(14, 0.13); }
-      if (s >= 3) { pb(-20, -0.03); pb(20, 0.03); }
-      if (s >= 4) { pb(-22, -0.27); pb(22, 0.27); }
     }
     if (p.missileT > 0) { p.misT -= dt; if (p.misT <= 0) { p.misT = 0.42; [-24, 24].forEach(dx => G.PB.push({ x: p.x + dx, y: p.y, vx: dx * 4, vy: -180, d: 3, mis: 1 })); } }
   }
@@ -667,7 +751,7 @@ function update(dt) {
   G.PB = G.PB.filter(b => !b.gone);
   // enemies
   for (const e of G.E) { if (!e.dead) updEnemy(e, dt);
-    if (!e.dead && !e.t.ground && G.train && G.train.hp > 0 && Math.abs(e.x - G.train.x) < G.train.w / 2 + e.r * 0.6 && e.y > G.train.y && e.y < G.train.y + G.train.h) { hurtTrain(4, e.x, e.y); killEnemy(e); }
+    if (!e.dead && !e.mini && !e.t.ground && G.train && G.train.hp > 0 && Math.abs(e.x - G.train.x) < G.train.w / 2 + e.r * 0.6 && e.y > G.train.y && e.y < G.train.y + G.train.h) { hurtTrain(e.kami ? 12 : 4, e.x, e.y); e.dead = true; boom(e.x, e.y, 1.3); }
     if (!e.dead && !e.t.ground) for (const p of PL) if (p.alive && (e.x - p.x) ** 2 + (e.y - p.y) ** 2 < (e.r * 0.7 + 10) ** 2 && p.loopT <= 0 && p.inv <= 0) { hurtPlayer(p); hurtEnemy(e, 5); } }
   G.E = G.E.filter(e => !e.dead && !e.gone);
   if (G.boss && G.boss.st === 'fight') for (const p of PL) if (p.alive && (G.boss.x - p.x) ** 2 + (G.boss.y - p.y) ** 2 < (G.boss.B.w * 0.28) ** 2) hurtPlayer(p);
@@ -675,25 +759,27 @@ function update(dt) {
   for (const b of G.EB) {
     b.x += b.vx * dt; b.y += b.vy * dt; if (b.rot !== undefined) b.rot += dt * 3;
     if (G.sp === 'zonda') b.x += G.wind * 0.35 * dt;
-    if (G.train && G.train.hp > 0 && Math.abs(b.x - G.train.x) < G.train.w / 2 + b.r && b.y > G.train.y && b.y < G.train.y + G.train.h) { hurtTrain(b.kind === 'r' ? 3 : 1, b.x, b.y); b.gone = 1; continue; }
     if (b.y > H + 30 || b.y < -40 || b.x < -30 || b.x > W + 30) { b.gone = 1; continue; }
     for (const p of PL) if (p.alive && (b.x - p.x) ** 2 + (b.y - p.y) ** 2 < (b.r + 6) ** 2 && p.loopT <= 0 && p.inv <= 0) { hurtPlayer(p); b.gone = 1; break; }
   }
   G.EB = G.EB.filter(b => !b.gone);
   // pickups
-  const mag = [0, 110, 180][upLv('iman')];
+  const mag = [0, 80, 140][upLv('iman')];
   for (const k of G.PK) {
     k.age += dt;
     if (k.kind === 'coin') {
-      k.vy += 300 * dt; k.vx *= 0.97; if (k.vy > 90) k.vy = 90;
+      k.vy += 260 * dt; k.vx *= 0.95; if (k.vy > 38) k.vy = 38;
       const np = nearestPl(k.x, k.y);
       const dx = np ? np.x - k.x : 0, dy = np ? np.y - k.y : 0, dd = Math.hypot(dx, dy) || 1;
-      if (np && (dd < 60 + mag || G.state === 'won') && k.age > 0.35) { k.vx = dx / dd * 520; k.vy = dy / dd * 520; }
+      if (np && ((mag && dd < mag) || G.state === 'won') && k.age > 0.35) { k.vx = dx / dd * 520; k.vy = dy / dd * 520; }
       k.x += k.vx * dt; k.y += k.vy * dt;
-      if (np && dd < 22) { k.gone = 1; S.coins++; G.coinsRun++; G.score += 10; SFX.coin(); }
+      if (np && dd < 26) { k.gone = 1; S.coins++; G.coinsRun++; G.score += 10; SFX.coin(); }
     } else if (k.kind === 'uva') {
-      const np = nearestPl(k.x, k.y); k.y += k.vy * dt;
-      if (np) { const dx = np.x - k.x, dy = np.y - k.y, dd = Math.hypot(dx, dy) || 1; if (mag && dd < 50 + mag) { k.x += dx / dd * 380 * dt; k.y += dy / dd * 380 * dt; } if (dd < 30) { k.gone = 1; pickGrape(k); } }
+      const np = nearestPl(k.x, k.y); k.y += G.speed * dt;
+      if (np) { const dx = np.x - k.x, dy = np.y - k.y, dd = Math.hypot(dx, dy) || 1; if (mag && dd < mag) { k.x += dx / dd * 380 * dt; k.y += dy / dd * 380 * dt; } if (dd < 30) { k.gone = 1; pickGrape(k); } }
+    } else if (k.kind === 'mina') {
+      k.y += G.speed * dt;
+      for (const p of PL) if (p.alive && (p.x - k.x) ** 2 + (p.y - k.y) ** 2 < 28 * 28) { k.gone = 1; boom(k.x, k.y, 1.8); sfxText(k.x, k.y - 20, '¡BUM!', 30, '#ff5f5f'); hurtPlayer(p); break; }
     } else { k.y += k.vy * dt; k.x += Math.sin(k.age * 3) * 30 * dt; const np = nearestPl(k.x, k.y); if (np && Math.hypot(np.x - k.x, np.y - k.y) < 34) { k.gone = 1; addPw(k.pw, np); sfxText(k.x, k.y - 30, { doble: '¡DOBLE!', escudo: '¡ESCUDO!', misil: '¡MISILES!', vida: '¡1UP!', bomba: '¡BOMBA!' }[k.pw], 26, '#7ef3ff'); } }
     if (k.y > H + 40) k.gone = 1;
   }
@@ -761,22 +847,25 @@ function render() {
   // ground enemies
   for (const e of G.E) if (e.t.ground) drawSpr(e.t.img, e.x, e.y, e.t.w, { sx: 1 + Math.sin(e.age * 5) * 0.06, white: e.flash > 0 });
   // shadows
-  for (const e of G.E) if (!e.t.ground) drawSpr(e.t.img, e.x + 14, e.y + 24, e.t.w * 0.82, { shadow: 1, alpha: 0.28 });
+  for (const e of G.E) if (!e.t.ground) drawSpr(e.t.img, e.x + 14, e.y + 24, e.t.w * 0.82, { shadow: 1, alpha: 0.28, rot: e.rot || 0 });
   if (G.boss) drawSpr(G.boss.B.img, G.boss.x + 26, G.boss.y + 44, G.boss.B.w * 0.85, { shadow: 1, alpha: 0.3, rot: G.boss.B.spin ? G.boss.age * 2.5 : 0 });
   if (G.train && G.train.hp > 0) drawSpr('tren', G.train.x, G.train.y + G.train.h / 2, G.train.w, { white: G.train.flash > 0 });
   for (const p of PL) if (p.alive) { const lp = p.loopT > 0 ? 1 - p.loopT / 1.1 : 0; drawSpr('nave', p.x + 16 + lp * 20, p.y + 30 + Math.sin(lp * Math.PI) * 30, 58, { shadow: 1, alpha: 0.3 }); }
   // pickups
   for (const k of G.PK) {
     if (k.kind === 'uva') { const bob = 1 + Math.sin(k.age * 5) * 0.06; if (k.gold) { ctx.save(); ctx.globalAlpha = 0.35 + Math.sin(k.age * 8) * 0.2; ctx.fillStyle = '#fff3a0'; ctx.beginPath(); ctx.arc(k.x, k.y, 26, 0, TAU); ctx.fill(); ctx.restore(); } drawSpr(k.gold ? 'uva-dorada' : 'uva', k.x, k.y, (k.gold ? 42 : 34) * bob); continue; }
+    if (k.kind === 'mina') { drawSpr('mina-vendimia', k.x, k.y, 46); if (Math.sin(k.age * 18) > 0) { ctx.fillStyle = '#ffd21f'; ctx.beginPath(); ctx.arc(k.x + 14, k.y - 20, 4, 0, TAU); ctx.fill(); } continue; }
     if (k.kind === 'coin') { const s = Math.abs(Math.cos(k.age * 6)); ctx.save(); ctx.translate(k.x, k.y); ctx.scale(Math.max(0.15, s), 1); ctx.fillStyle = '#ffd21f'; ctx.strokeStyle = '#120a1f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(0, 0, 7, 0, TAU); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#ff8a1f'; ctx.fillRect(-1.5, -4, 3, 8); ctx.restore(); }
     else { const p = PRE['pw-' + k.pw]; const pul = 1 + Math.sin(k.age * 8) * 0.07; ctx.save(); ctx.globalAlpha = 0.35 + Math.sin(k.age * 8) * 0.15; ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(k.x, k.y, 24 * pul, 0, TAU); ctx.fill(); ctx.restore(); if (p) drawSpr('pw-' + k.pw, k.x, k.y, 36 * pul); }
   }
   // enemies
-  for (const e of G.E) if (!e.t.ground) { const fl = e.t.flap ? 1 - e.t.flap * Math.abs(Math.sin(e.age * 15)) : 1; drawSpr(e.t.img, e.x, e.y, e.t.w, { sx: fl, white: e.flash > 0 }); }
+  for (const e of G.E) if (!e.t.ground) { const fl = e.t.flap ? 1 - e.t.flap * Math.abs(Math.sin(e.age * 15)) : 1; drawSpr(e.t.img, e.x, e.y, e.t.w, { sx: fl, white: e.flash > 0 && !e.mini, rot: e.rot || 0 }); if (e.mini && e.flash > 0) drawSpr(e.t.img, e.x, e.y, e.t.w, { sx: fl, white: 1, alpha: 0.35 }); }
   // boss
   if (G.boss) { const b = G.boss; const rot = b.B.spin ? b.age * 2.5 : 0, fl = b.B.spin ? 1 : 1 - 0.05 * Math.abs(Math.sin(b.age * 7)); drawSpr(b.B.img, b.x, b.y, b.B.w, { sx: fl, rot }); if (b.flash > 0) drawSpr(b.B.img, b.x, b.y, b.B.w, { sx: fl, rot, white: 1, alpha: 0.35 }); }
   // player bullets
   for (const b of G.PB) { if (b.mis) { ctx.save(); ctx.translate(b.x, b.y); ctx.rotate(Math.atan2(b.vy, b.vx) + Math.PI / 2); ctx.drawImage(BUL.m, -6, -11, 12, 22); ctx.restore(); } else ctx.drawImage(BUL.p, b.x - 4, b.y - 12, 8, 24); }
+  for (const b of G.BM) { ctx.save(); ctx.globalAlpha = 0.7; ctx.fillStyle = '#7ef3ff'; ctx.beginPath(); ctx.ellipse(b.x, b.y + 22, 5, 10 + Math.random() * 6, 0, 0, TAU); ctx.fill(); ctx.restore(); drawSpr('bomba', b.x, b.y, 24); }
+  for (const w of G.warns) if (Math.floor(w.t * 8) % 2 === 0) { ctx.fillStyle = '#ff4f4f'; ctx.strokeStyle = '#120a1f'; ctx.lineWidth = 3; ctx.beginPath(); ctx.moveTo(w.x, H - 34); ctx.lineTo(w.x - 16, H - 8); ctx.lineTo(w.x + 16, H - 8); ctx.closePath(); ctx.fill(); ctx.stroke(); ctx.fillStyle = '#fff'; ctx.fillRect(w.x - 2, H - 27, 4, 10); ctx.fillRect(w.x - 2, H - 14, 4, 4); }
   // players
   for (const p of PL) {
     if (!p.alive) continue;
@@ -798,7 +887,7 @@ function render() {
     const p = f.age / f.life;
     if (f.type === 'spark') { ctx.globalAlpha = 1 - p; ctx.fillStyle = f.c; ctx.fillRect(f.x - f.s / 2, f.y - f.s / 2, f.s, f.s); ctx.globalAlpha = 1; }
     else if (f.type === 'burst') { ctx.save(); ctx.translate(f.x, f.y); ctx.rotate(f.rot); const r = f.r * (0.5 + p * 0.9); ctx.globalAlpha = 1 - p * p; burstPath(r); ctx.fillStyle = '#ffd21f'; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = '#120a1f'; ctx.stroke(); burstPath(r * 0.55, 8); ctx.fillStyle = '#ff8a1f'; ctx.fill(); ctx.restore(); }
-    else if (f.type === 'ring') { ctx.save(); ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.small ? '#7ef3ff' : '#fff'; ctx.lineWidth = f.small ? 4 : 10 * (1 - p) + 2; ctx.beginPath(); ctx.arc(f.x, f.y, (f.small ? 40 : 40 + p * H) , 0, TAU); ctx.stroke(); ctx.restore(); }
+    else if (f.type === 'ring') { ctx.save(); ctx.globalAlpha = 1 - p; ctx.strokeStyle = f.small ? '#7ef3ff' : '#fff'; ctx.lineWidth = f.small ? 4 : 10 * (1 - p) + 2; ctx.beginPath(); ctx.arc(f.x, f.y, (f.small ? 40 : f.R ? f.R * (0.35 + 0.65 * p) : 40 + p * H), 0, TAU); ctx.stroke(); ctx.restore(); }
   }
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   for (const t of G.TX) { const p = t.age / t.life, s = p < 0.15 ? 0.4 + p / 0.15 * 0.7 : 1.1 - (p - 0.15) * 0.15; ctx.save(); ctx.translate(t.x, t.y - p * 20); ctx.rotate(t.rot); ctx.scale(s, s); ctx.globalAlpha = p > 0.75 ? (1 - p) / 0.25 : 1; outlined(t.t, 0, 0, t.size, t.c, undefined, undefined, W * 0.92); ctx.restore(); }
@@ -815,10 +904,10 @@ function drawHUD() {
   // progress bar
   const bx = 14, bw = W - 92, by = 14;
   ctx.fillStyle = 'rgba(18,10,31,.65)'; ctx.fillRect(bx - 2, by - 5, bw + 4, 10);
-  const pr = G.boss || G.state === 'bosswarn' || G.state === 'won' ? 1 : G.t / L.len;
+  const pr = G.boss || G.state === 'bosswarn' || G.state === 'won' ? 1 : prog();
   const gr = ctx.createLinearGradient(bx, 0, bx + bw, 0); gr.addColorStop(0, '#ff8a1f'); gr.addColorStop(1, '#e2357a');
   ctx.fillStyle = gr; ctx.fillRect(bx, by - 3, bw * pr, 6);
-  ctx.fillStyle = '#ffd21f'; ctx.fillRect(bx + bw * 0.5 - 1, by - 5, 2, 10);
+  ctx.fillStyle = '#ffd21f'; for (let k = 1; k < parts(L); k++) ctx.fillRect(bx + bw * k / parts(L) - 1, by - 5, 2, 10);
   const bi = BOSSES[G.lv] ? IMG[BOSSES[G.lv].img] : IMG[levelIcon(G.lv)]; if (bi) { const k = Math.min(22 / bi.width, 22 / bi.height); ctx.drawImage(bi, bx + bw + 13 - bi.width * k / 2, by - bi.height * k / 2, bi.width * k, bi.height * k); }
   // score
   ctx.textAlign = 'left'; outlined(fmt(G.score), 14, 36, 24, '#fff');
@@ -826,11 +915,13 @@ function drawHUD() {
   ctx.fillStyle = '#ffd21f'; ctx.strokeStyle = '#120a1f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(W - 112, 36, 7, 0, TAU); ctx.fill(); ctx.stroke();
   ctx.textAlign = 'left'; outlined(String(S.coins), W - 101, 38, 18, '#ffd21f', undefined, undefined, 50);
   // lives
-  if (G.sp === 'vendimia') { drawSpr('uva', 24, 64, 20); ctx.textAlign = 'left'; outlined(String(G.grapes), 38, 65, 18, '#fff'); if (G.combo > 1) outlined('x' + G.combo, 80, 65, 18, '#ffd21f'); }
-  else for (let i = 0; i < Math.min(6, G.lives); i++) drawSpr('nave', 20 + i * 18, 62, 16);
+  if (G.sp === 'vendimia') { drawSpr('uva', 24, 84, 20); ctx.textAlign = 'left'; outlined(String(G.grapes), 38, 85, 18, '#fff'); if (G.combo > 1) outlined('x' + G.combo, 80, 85, 18, '#ffd21f'); }
+  for (let i = 0; i < Math.min(6, G.lives); i++) drawSpr('nave', 20 + i * 18, 62, 16);
   if (G.train) { const tw = 130, tx = W / 2 - tw / 2, ty = 58; ctx.fillStyle = 'rgba(18,10,31,.75)'; ctx.fillRect(tx - 2, ty - 2, tw + 4, 12); const k = G.train.hp / G.train.max; ctx.fillStyle = k > 0.5 ? '#3fd16b' : k > 0.25 ? '#ffd21f' : '#ff4f4f'; ctx.fillRect(tx, ty, tw * k, 8); ctx.textAlign = 'center'; outlined('TRASANDINO', W / 2, ty - 8, 12, '#fff'); }
   const ME = PL[G.me || 0];
   if (ME && ME.missileT > 0) { ctx.textAlign = 'left'; outlined('MISILES ' + Math.ceil(ME.missileT), 14, 82, 15, '#ffd21f'); }
+  const MINI = G.E.find(e => e.mini && e.age > 1);
+  if (MINI && !G.boss) { const w2 = W - 60, y2 = 52; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(18,10,31,.75)'; ctx.fillRect(30, y2 + 8, w2, 12); ctx.fillStyle = '#ff8a1f'; ctx.fillRect(32, y2 + 10, (w2 - 4) * Math.max(0, MINI.hp) / MINI.maxhp, 8); outlined('MINI JEFE: ' + MININAME[MINI.k].toUpperCase(), W / 2, y2, 14, '#fff', undefined, undefined, W - 80); }
   // boss bar
   if (G.boss && G.boss.st !== 'enter') {
     const w2 = W - 60, y2 = 52; ctx.textAlign = 'center';
@@ -847,7 +938,7 @@ function drawHUD() {
   // popup
   if (G.pops.length) {
     const p = G.pops[0], c = CHARS[p.who], tIn = Math.min(1, G.popT * 6), tOut = Math.min(1, (p.dur - G.popT) * 6), k = Math.min(tIn, tOut);
-    const x = 8 - (1 - k) * (W + 20), y = G.boss ? 84 : 72, w = W - 16, h = 70;
+    const x = 8 - (1 - k) * (W + 20), y = (G.boss || MINI) ? 84 : 72, w = W - 16, h = 70;
     ctx.save(); ctx.translate(x, 0);
     ctx.fillStyle = '#120a1f'; ctx.fillRect(4, y + 4, w, h);
     ctx.fillStyle = c.dark ? '#3a1a63' : '#fff7e6'; ctx.fillRect(0, y, w, h); ctx.lineWidth = 3; ctx.strokeStyle = '#120a1f'; ctx.strokeRect(0, y, w, h);
@@ -919,12 +1010,12 @@ function frame(now) {
 }
 
 /* ---------- Flow ---------- */
-function startLevel(lv, fromT = 0, opt = {}) {
+function startLevel(lv, cp = 0, opt = {}) {
   hideAll(); placeButtons(); if (BOSSES[lv]) prep(BOSSES[lv].img, BOSSES[lv].w);
-  newGame(lv, fromT, opt); G.stateClock = 0; last = performance.now(); M.hold = false;
-  if (G.state !== 'bosswarn') playMusic('l' + lv);
+  newGame(lv, cp, opt); G.stateClock = 0; last = performance.now(); M.hold = false;
+  if (G.state !== 'bosswarn') playMusic(LEVELS[lv].mus);
 }
-const COMIC_BEFORE = ['prologo', 'entre1', 'entre2', 'entre3', 'entre4'];
+const COMIC_BEFORE = ['prologo', 'entre1', 'c2', 'c3', 'c4', 'c5', 'c6'];
 function startStory(lv) { audioOn(); playComic(COMIC_BEFORE[lv], () => startLevel(lv, 0, { mode: 'story' })); }
 function togglePause() {
   if (!G || !G.running || G.state === 'dead' || G.state === 'won') return;
@@ -944,14 +1035,14 @@ function finishLevel() {
     show('win'); return;
   }
   const story = G.mode === 'story', daily = G.daily;
-  S.best[lv] = Math.max(S.best[lv] || 0, G.score); if (story) { S.unlocked = Math.max(S.unlocked, Math.min(5, lv + 2)); if (lv === 4) S.beaten = true; } save();
-  $('wtitle').textContent = daily ? '¡DESAFÍO GANADO!' : L.sp === 'tren' ? '¡TREN A SALVO!' : L.sp === 'vendimia' ? '¡VENDIMIA COMPLETA!' : lv === 4 && story ? '¡MENDOZA SALVADA!' : '¡NIVEL SUPERADO!';
+  S.best[lv] = Math.max(S.best[lv] || 0, G.score); if (story && lv < NSTORY) { S.unlocked = Math.max(S.unlocked, Math.min(NSTORY, lv + 2)); if (lv === NSTORY - 1) S.beaten = true; } save();
+  $('wtitle').textContent = daily ? '¡DESAFÍO GANADO!' : L.sp === 'tren' ? '¡TREN A SALVO!' : L.sp === 'vendimia' ? '¡VENDIMIA COMPLETA!' : lv === NSTORY - 1 && story ? '¡MENDOZA SALVADA!' : '¡NIVEL SUPERADO!';
   const dmsg = daily ? dailyResult(true) : '';
   $('wpts').textContent = fmt(G.score); $('wbest').textContent = fmt(S.best[lv]); $('wcoins').textContent = '+' + G.coinsRun;
   $('wdaily').textContent = dmsg; $('wdaily').classList.toggle('hidden', !dmsg);
-  const canNext = lv < 4 && S.unlocked > lv + 1;
-  $('wNext').textContent = daily ? 'VER RÉCORDS' : story ? (lv === 4 ? 'VER EL FINAL' : 'SEGUIR LA HISTORIA') : (canNext ? 'SIGUIENTE NIVEL' : 'ELEGIR NIVEL');
-  $('wNext').onclick = () => { if (daily) openRecords(); else if (story) { if (lv < 4) startStory(lv + 1); else playComic('final', () => show('fin')); } else if (canNext) startLevel(lv + 1, 0, { mode: 'free' }); else openLevels(); };
+  const canNext = lv < NSTORY - 1 && S.unlocked > lv + 1;
+  $('wNext').textContent = daily ? 'VER RÉCORDS' : story ? (lv === NSTORY - 1 ? 'VER EL FINAL' : 'SEGUIR LA HISTORIA') : (canNext ? 'SIGUIENTE NIVEL' : 'ELEGIR NIVEL');
+  $('wNext').onclick = () => { if (daily) openRecords(); else if (story) { if (lv < NSTORY - 1) startStory(lv + 1); else playComic('final', () => show('fin')); } else if (canNext) startLevel(lv + 1, 0, { mode: 'free' }); else openLevels(); };
   $('wShop').onclick = () => openShop(() => show('win'));
   $('wMenu').onclick = toMenu;
   afterRun(() => show('win'));
@@ -974,8 +1065,8 @@ function gameOver() {
   const cp = G.checkpoint, cont = $('ovCont');
   clearInterval(contTimer);
   cont.classList.add('hidden');
-  const startCont = () => { if (cp > 0 && !(L.noBoss && cp >= L.len)) {
-    let n = 10; cont.classList.remove('hidden'); const lab = () => cont.textContent = (cp >= G.L.len ? 'CONTINUAR DESDE EL JEFE ' : 'CONTINUAR DESDE LA MITAD ') + n;
+  const startCont = () => { if (cp > 0) {
+    let n = 10; cont.classList.remove('hidden'); const lab = () => cont.textContent = (cp >= parts(L) ? 'CONTINUAR DESDE EL JEFE ' : 'CONTINUAR DESDE LA PARTE ' + (cp + 1) + ' · ') + n;
     lab(); contTimer = setInterval(() => { n--; if (n < 0) { clearInterval(contTimer); cont.classList.add('hidden'); } else lab(); }, 1000);
     cont.onclick = () => { clearInterval(contTimer); recolor(() => startLevel(lv, cp, { mode, daily })); };
   } };
@@ -1031,9 +1122,9 @@ $('cnext').addEventListener('click', () => { audioOn(); nextPanel(); });
 $('cskip').addEventListener('click', () => { if (!comic) return; const d = comic.done; clearTimeout(comic.tm); comic = null; d && d(); });
 
 /* ---------- Menus ---------- */
-function toMenu() { if (G) { G.running = false; } M.hold = false; playMusic('menu'); clearInterval(contTimer); $('menucoins').textContent = '● ' + S.coins + ' monedas'; $('bPlay').textContent = 'MODO HISTORIA'; const di = dailyInfo(); $('bDaily').textContent = 'DESAFÍO ' + ((S.daily || {}).done === di.key ? '✓' : '★'); $('mute').textContent = S.mute ? '✕' : '♪'; show('menu'); }
+function toMenu() { if (NET.only) { guestOver(); return; } if (G) { G.running = false; } M.hold = false; playMusic('menu'); clearInterval(contTimer); $('menucoins').textContent = '● ' + S.coins + ' monedas'; $('bPlay').textContent = 'MODO HISTORIA'; const di = dailyInfo(); $('bDaily').textContent = 'DESAFÍO ' + ((S.daily || {}).done === di.key ? '✓' : '★'); $('mute').textContent = S.mute ? '✕' : '♪'; show('menu'); }
 $('bPlay').onclick = () => {
-  audioOn(); const top = Math.min(5, S.unlocked) - 1;
+  audioOn(); const top = Math.min(NSTORY, S.unlocked) - 1;
   if (top <= 0) return startStory(0);
   $('storytxt').textContent = `Vas por el nivel ${top + 1}: ${LEVELS[top].name}.`;
   $('sCont').textContent = 'SEGUIR · NIVEL ' + (top + 1);
@@ -1044,17 +1135,17 @@ $('bPlay').onclick = () => {
 };
 function lvlBtn(i, label, sub) {
   const ok = avail(i);
-  return `<button class="lvl" data-l="${i}" ${ok ? '' : 'disabled'}><img src="${url(levelIcon(i))}" alt=""><span><b>${label}</b><small>${ok ? sub : (i < 5 ? 'Se desbloquea en el modo historia' : 'Se desbloquea al pasar el nivel ' + (LEVELS[i].unlock - 1) + ' de la historia')}</small></span></button>`;
+  return `<button class="lvl" data-l="${i}" ${ok ? '' : 'disabled'}><img src="${url(levelIcon(i))}" alt=""><span><b>${label}</b><small>${ok ? sub : (i < NSTORY ? 'Se desbloquea en el modo historia' : 'Se desbloquea al pasar el nivel ' + (LEVELS[i].unlock - 1) + ' de la historia')}</small></span></button>`;
 }
 function openLevels() {
   const rec = i => S.best[i] ? ' · Récord ' + fmt(S.best[i]) : '';
-  $('lvlist').innerHTML = LEVELS.slice(0, 5).map((L, i) => lvlBtn(i, `${i + 1}. ${L.name}`, 'Jefe: ' + BOSSES[i].name + rec(i))).join('')
+  $('lvlist').innerHTML = LEVELS.slice(0, NSTORY).map((L, i) => lvlBtn(i, `${i + 1}. ${L.name}`, (BOSSES[i] ? 'Jefe: ' + BOSSES[i].name : 'Cuidá el tren hasta Puente del Inca') + rec(i))).join('')
     + '<h3 class="sect">ESPECIALES</h3>'
-    + [8, 5, 6, 7].map(i => lvlBtn(i, LEVELS[i].name, { 5: 'Tormenta de noche, con viento que te empuja', 6: 'Cuidá el tren: si lo destruyen, perdés', 7: 'Todo en 8 bits, como un fichín', 8: 'Sin balas: juntá uvas a toda velocidad' }[i] + rec(i))).join('');
+    + lvlBtn(VEND, LEVELS[VEND].name, 'Sin balas: buscá las uvas y esquivá la dinamita' + rec(VEND));
   if (G) G.running = false; show('levels');
 }
 $('bLevels').onclick = openLevels;
-$('lvlist').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; audioOn(); const i = +b.dataset.l; if (i >= 5) playComic('esp' + i, () => startLevel(i, 0, { mode: 'free' })); else startLevel(i, 0, { mode: 'free' }); });
+$('lvlist').addEventListener('click', e => { const b = e.target.closest('.lvl'); if (!b || b.disabled) return; audioOn(); const i = +b.dataset.l; if (i === VEND) playComic('espV', () => startLevel(i, 0, { mode: 'free' })); else startLevel(i, 0, { mode: 'free' }); });
 document.querySelectorAll('[data-back]').forEach(b => b.onclick = toMenu);
 $('bShop').onclick = () => openShop(toMenu);
 $('mute').onclick = () => { S.mute = !S.mute; save(); $('mute').textContent = S.mute ? '✕' : '♪'; audioOn(); };
@@ -1233,6 +1324,7 @@ function openCoop() {
   if (G) G.running = false;
   const host = NET.role === 'h', guest = NET.role === 'g';
   $('coopCreate').classList.toggle('hidden', !!NET.role);
+  $('coopLeave').textContent = guest ? 'SALIR' : 'VOLVER';
   $('coopLinkBox').classList.toggle('hidden', !(host && !NET.ok));
   $('coopLevels').classList.toggle('hidden', !(host && NET.ok));
   $('coopTxt').textContent = guest ? 'Te invitaron a jugar Puelche. Los dos en el mismo cielo, cada uno desde su cel.' : 'Los dos en el mismo cielo, cada uno desde su cel. Comparten las vidas y las bombas.';
@@ -1241,15 +1333,15 @@ function openCoop() {
   playMusic('menu'); show('coop');
 }
 function renderCoopLevels() {
-  const ids = [0, 1, 2, 3, 4, 8, 5, 6, 7].filter(avail);
-  $('coopLevels').innerHTML = '<h3 class="sect">ELEGÍ EL NIVEL</h3>' + ids.map(i => `<button class="lvl" data-c="${i}"><img src="${url(levelIcon(i))}" alt=""><span><b>${i < 5 ? (i + 1) + '. ' : ''}${LEVELS[i].name}</b><small>${i < 5 ? 'Jefe: ' + BOSSES[i].name : 'Especial'}</small></span></button>`).join('');
+  const ids = [0, 1, 2, 3, 4, 5, 6, 7].filter(avail);
+  $('coopLevels').innerHTML = '<h3 class="sect">ELEGÍ EL NIVEL</h3>' + ids.map(i => `<button class="lvl" data-c="${i}"><img src="${url(levelIcon(i))}" alt=""><span><b>${i < NSTORY ? (i + 1) + '. ' : ''}${LEVELS[i].name}</b><small>${BOSSES[i] ? 'Jefe: ' + BOSSES[i].name : i === VEND ? 'Especial' : 'Cuidá el tren'}</small></span></button>`).join('');
 }
 async function coopCreate() {
   try { await loadPeer(); } catch (e) { coopStatus('No cargó el módulo online. ¿Tenés internet?'); return; }
   NET.role = 'h'; NET.sala = nuevaSala(); NET.ok = false; let guestTok = null;
   NET.red = crearRed({ sala: NET.sala, rol: 'h', alEstado: coopStatus, alMensaje: hostMsg,
     aceptar: t => { if (!guestTok) { guestTok = t || 'x'; return true; } return t === guestTok; },
-    alConectar: () => { NET.ok = true; SFX.pw(); if (G && G.coop && G.running) nsend({ t: 'start', lv: G.lv, f: +G.t.toFixed(1) }); else { nsend({ t: 'lobby' }); if (!$('coop').classList.contains('hidden')) openCoop(); } },
+    alConectar: () => { NET.ok = true; SFX.pw(); if (G && G.coop && G.running) nsend({ t: 'start', lv: G.lv, f: G.boss || G.state === 'bosswarn' ? 3 : G.part }); else { nsend({ t: 'lobby' }); if (!$('coop').classList.contains('hidden')) openCoop(); } },
     alCortar: () => { NET.ok = false; if (G && G.coop && G.running) { toast('Tu amigo se desconectó'); NET.gx = null; } } });
   const u = coopLink(); $('coopLink').value = u; $('coopWa').href = 'https://wa.me/?text=' + encodeURIComponent('¡Jugá Puelche conmigo! Entrá acá: ' + u);
   openCoop();
@@ -1267,8 +1359,8 @@ async function coopJoin(sala) {
 function leaveCoop() {
   if (NET.red) { nsend({ t: 'bye' }); const r = NET.red; setTimeout(() => r.cerrar(), 300); }
   Object.assign(NET, { role: null, red: null, sala: null, ok: false, snaps: [], gx: null, gy: null });
-  if (QS.get('sala')) history.replaceState(null, '', location.pathname + (QS.get('peerhost') ? `?peerhost=${QS.get('peerhost')}&peerport=${QS.get('peerport') || 9000}` : ''));
-  QS.delete('sala');
+  if (QS.get('sala') && !NET.only) history.replaceState(null, '', location.pathname + (QS.get('peerhost') ? `?peerhost=${QS.get('peerhost')}&peerport=${QS.get('peerport') || 9000}` : ''));
+  if (!NET.only) QS.delete('sala');
   toMenu();
 }
 function coopStart(lv, f = 0) {
@@ -1292,10 +1384,10 @@ const r1 = v => Math.round(v * 10) / 10, ri = Math.round;
 function hostSnap() {
   return { t: 's', st: G.state, sT: r1(G.stateT), oT: r1(G.overT), sc: G.score, lv: G.lives, bo: G.bombs, gt: r1(G.t), scr: ri(G.scroll), fl: r1(G.flash), sh: r1(G.shake), pa: G.paused ? 1 : 0,
     P: PL.map(p => [ri(p.x), ri(p.y), p.alive ? 1 : 0, r1(p.loopT), r1(p.inv), p.shield, r1(p.shieldT), ri(p.vx), p.loops, r1(Math.max(0, p.missileT)), p.shot, p.rs || 0]),
-    E: G.E.map(e => [e.id, ETK.indexOf(e.k), ri(e.x), ri(e.y), e.flash > 0 ? 1 : 0]),
+    E: G.E.map(e => [e.id, ETK.indexOf(e.k), ri(e.x), ri(e.y), e.flash > 0 ? 1 : 0, e.mini ? Math.max(1, ri(e.hp)) : 0, e.mini ? ri(e.maxhp) : 0, r1(e.rot || 0), r1(e.age)]), pt: G.part, BM: G.BM.map(b => [ri(b.x), ri(b.y)]), WN: G.warns.map(w => [ri(w.x), r1(w.t)]),
     B: G.boss ? [ri(G.boss.x), ri(G.boss.y), ri(G.boss.hp), ri(G.boss.maxhp), r1(G.boss.age), G.boss.st, G.boss.flash > 0 ? 1 : 0] : 0,
     EB: G.EB.map(b => [ri(b.x), ri(b.y), ri(b.vx), ri(b.vy), b.r, b.kind]),
-    K: G.PK.map(k => [k.kind === 'coin' ? 0 : k.kind === 'uva' ? 1 : 2, ri(k.x), ri(k.y), k.kind === 'pw' ? k.pw : k.gold ? 1 : 0, ri(k.vx || 0), ri(k.vy || 0)]),
+    K: G.PK.map(k => [k.kind === 'coin' ? 0 : k.kind === 'uva' ? 1 : k.kind === 'mina' ? 3 : 2, ri(k.x), ri(k.y), k.kind === 'pw' ? k.pw : k.gold ? 1 : 0, ri(k.vx || 0), ri(k.kind === 'uva' || k.kind === 'mina' ? G.speed : k.vy || 0)]),
     po: G.pops[0] ? [G.pops[0].who, G.pops[0].text, G.pops[0].dur, r1(G.popT)] : 0,
     bn: G.banner ? [G.banner.t1, G.banner.t2, G.banner.life, r1(G.banner.age), G.banner.warn ? 1 : 0] : 0,
     tr: G.train ? [ri(G.train.hp), G.train.flash > 0 ? 1 : 0] : 0, wd: ri(G.wind), gr: G.grapes, cb: G.combo,
@@ -1319,7 +1411,7 @@ function guestStart(lv, f) {
   hideAll(); placeButtons(); if (BOSSES[lv]) prep(BOSSES[lv].img, BOSSES[lv].w);
   newGame(lv, f, { two: true, mode: 'coop' }); G.coop = true; G.remote = true; G.me = 1; G.pops.length = 0;
   NET.snaps = []; NET.eAge = {}; NET.LB = []; NET.myRs = -1; G.stateClock = 0; last = performance.now(); M.hold = false;
-  playMusic(f >= LEVELS[lv].len && !LEVELS[lv].noBoss ? 'boss' : 'l' + lv);
+  playMusic(f >= parts(LEVELS[lv]) && !LEVELS[lv].noBoss ? 'boss' : LEVELS[lv].mus);
 }
 function guestEvents(d) {
   for (const e of d.ev || []) {
@@ -1329,8 +1421,15 @@ function guestEvents(d) {
   }
   if (d.st !== G.state) { if (d.st === 'bosswarn') playMusic('boss'); if (d.st === 'won') stopMusic(); }
 }
+function guestOver() {
+  if (G) G.running = false; NET.snaps = [];
+  $('ceT').textContent = 'LA PARTIDA TERMINÓ'; $('ceS').textContent = ''; $('ceC').textContent = 'Para volver a jugar, pedile a tu amigo un link nuevo o tocá reintentar.';
+  $('ceW').classList.add('hidden'); $('ceLeave').textContent = 'REINTENTAR'; $('ceLeave').onclick = () => location.reload();
+  playMusic('menu'); show('coopEnd');
+}
 function guestEnd(d) {
   if (G) G.running = false; S.coins += d.co || 0; save();
+  $('ceW').classList.remove('hidden'); $('ceLeave').textContent = 'SALIR'; $('ceLeave').onclick = leaveCoop;
   $('ceT').textContent = d.won ? '¡NIVEL SUPERADO!' : 'GAME OVER'; $('ceS').textContent = fmt(d.sc) + ' puntos';
   $('ceC').textContent = d.co ? `+${d.co} monedas para vos también` : '';
   playMusic(d.won ? 'menu' : 'over'); show('coopEnd');
@@ -1346,7 +1445,7 @@ function guestUpdate(dt) {
     G.state = s1.st; G.stateT = s1.sT; G.overT = s1.oT; G.score = s1.sc; G.lives = s1.lv; G.bombs = s1.bo; G.t = lerp(s0.gt, s1.gt, k);
     G.scroll = lerp(s0.scr, s1.scr, k); G.flash = Math.max(G.flash - dt * 1.6, s1.fl); G.shake = Math.max(G.shake - dt * 30, s1.sh);
     G.wind = s1.wd; G.grapes = s1.gr; G.combo = s1.cb;
-    if (s1.tr && G.train) { G.train.hp = s1.tr[0]; G.train.flash = s1.tr[1] ? 0.05 : 0; G.train.x = W * 0.532 + Math.sin(G.stateClock * 1.3) * 1.5; }
+    if (s1.tr && G.train) { G.train.hp = s1.tr[0]; G.train.flash = s1.tr[1] ? 0.05 : 0; G.train.x = W * 0.5 + Math.sin(G.stateClock * 1.3) * 1.5; }
     // jugadores
     const a0 = s0.P, a1 = s1.P;
     if (a1[0]) { const p = PL[0], q0 = a0[0] || a1[0], q1 = a1[0]; p.x = lerp(q0[0], q1[0], k); p.y = lerp(q0[1], q1[1], k); p.alive = !!q1[2]; p.loopT = q1[3]; p.inv = q1[4]; p.shield = q1[5]; p.shieldT = q1[6]; p.vx = q1[7]; p.loops = q1[8]; p.missileT = q1[9]; p.shot = q1[10]; }
@@ -1355,12 +1454,13 @@ function guestUpdate(dt) {
       if (q[11] !== NET.myRs || (wasDead && me.alive)) { NET.myRs = q[11]; me.x = q[0]; me.y = q[1]; me.drag = null; } }
     // enemigos
     const m0 = {}; for (const e of s0.E) m0[e[0]] = e;
-    const ages = {}; G.E = s1.E.map(e => { const p0 = m0[e[0]] || e, kk = ETK[e[1]], t = ET[kk]; const ag = (NET.eAge[e[0]] || 0) + dt; ages[e[0]] = ag; return { id: e[0], k: kk, t, x: lerp(p0[2], e[2], k), y: lerp(p0[3], e[3], k), flash: e[4] ? 0.05 : 0, age: ag, r: t.w * 0.34 }; });
+    const ages = {}; G.E = s1.E.map(e => { const p0 = m0[e[0]] || e, kk = ETK[e[1]], t = e[5] ? miniT(kk) : ET[kk]; const ag = (NET.eAge[e[0]] || 0) + dt; ages[e[0]] = ag; return { id: e[0], k: kk, t, x: lerp(p0[2], e[2], k), y: lerp(p0[3], e[3], k), flash: e[4] ? 0.05 : 0, age: e[5] ? e[8] : ag, r: t.w * 0.34, mini: e[5] ? 1 : 0, hp: e[5], maxhp: e[6], rot: e[7] }; });
+    G.part = s1.pt || 0; G.BM = (s1.BM || []).map(b => ({ x: b[0], y: b[1] })); G.warns = (s1.WN || []).map(w => ({ x: w[0], t: w[1] }));
     NET.eAge = ages;
     if (s1.B && BOSSES[G.lv]) { const b0 = s0.B || s1.B, b = s1.B; G.boss = G.boss || { B: BOSSES[G.lv] }; Object.assign(G.boss, { x: lerp(b0[0], b[0], k), y: lerp(b0[1], b[1], k), hp: b[2], maxhp: b[3], age: b[4], st: b[5], flash: b[6] ? 0.05 : 0 }); if (!PRE[G.boss.B.img]) prep(G.boss.B.img, G.boss.B.w); }
     else G.boss = null;
     G.EB = s0.EB.map(b => ({ x: b[0] + b[2] * age + (G.sp === 'zonda' ? G.wind * 0.35 * age : 0), y: b[1] + b[3] * age, r: b[4], kind: b[5], rot: b[5] === 'r' ? G.stateClock * 3 + b[0] : undefined }));
-    G.PK = s0.K.map(c => ({ kind: c[0] === 0 ? 'coin' : c[0] === 1 ? 'uva' : 'pw', x: c[1] + (c[0] === 0 ? c[4] * age : 0), y: c[2] + c[5] * age, pw: c[0] === 2 ? c[3] : undefined, gold: c[0] === 1 && c[3] === 1, age: G.stateClock + c[1] * 0.01 }));
+    G.PK = s0.K.map(c => ({ kind: c[0] === 0 ? 'coin' : c[0] === 1 ? 'uva' : c[0] === 3 ? 'mina' : 'pw', x: c[1] + (c[0] === 0 ? c[4] * age : 0), y: c[2] + (c[0] === 0 ? Math.min(c[5], 38) : c[5]) * age, pw: c[0] === 2 ? c[3] : undefined, gold: c[0] === 1 && c[3] === 1, age: G.stateClock + c[1] * 0.01 }));
     if (s1.po) { const [who, text, dur, pt] = s1.po; if (!G.pops[0] || G.pops[0].text !== text) { G.pops = [{ who, text, dur }]; G.popT = pt; } else G.popT = Math.max(G.popT, pt); } else G.pops = [];
     if (s1.bn) { const [t1, t2, life, ag, warn] = s1.bn; if (!G.banner || G.banner.t1 !== t1) G.banner = { t1, t2, life, age: ag, warn }; } else G.banner = null;
   }
@@ -1379,7 +1479,7 @@ function guestUpdate(dt) {
   // disparos que se ven acá (el daño lo calcula el anfitrión)
   if (G.state !== 'won' && G.sp !== 'vendimia') PL.forEach((p, i) => {
     if (!p.alive) return; NET.fireT[i] -= dt;
-    if (NET.fireT[i] <= 0) { NET.fireT[i] = 0.105; if (i === 1) SFX.shoot(); const s = p.shot, pb = (dx, a) => NET.LB.push({ x: p.x + dx, y: p.y - 26, vx: Math.sin(a) * 640, vy: -Math.cos(a) * 640 }); pb(-6, 0); pb(6, 0); if (s >= 2) { pb(-14, -0.13); pb(14, 0.13); } if (s >= 3) { pb(-20, -0.03); pb(20, 0.03); } if (s >= 4) { pb(-22, -0.27); pb(22, 0.27); } }
+    if (NET.fireT[i] <= 0) { NET.fireT[i] = 0.105; if (i === 1) SFX.shoot(); const s = p.shot, pb = (dx, a) => NET.LB.push({ x: p.x + dx, y: p.y - 26, vx: Math.sin(a) * 640, vy: -Math.cos(a) * 640 }); pb(-6, 0); pb(6, 0); if (s >= 2) { pb(-14, -0.13); pb(14, 0.13); }  }
     if (p.missileT > 0) { NET.misT[i] -= dt; if (NET.misT[i] <= 0) { NET.misT[i] = 0.42; [-24, 24].forEach(dx => NET.LB.push({ x: p.x + dx, y: p.y, vx: dx * 4, vy: -380, mis: 1 })); } }
   });
   for (const b of NET.LB) {
@@ -1407,13 +1507,12 @@ $('coopCopy').onclick = async () => { const u = $('coopLink').value; let ok = fa
   let n = 0; const all = SPRITES;
   await Promise.all(all.map(s => loadImg(s).then(() => { n++; $('loadbar').style.width = (n / all.length * 100) + '%'; })));
   try { await Promise.race([Promise.all([document.fonts.load('40px "Luckiest Guy"'), document.fonts.load('700 13px Archivo'), document.fonts.load('800 16px Archivo')]), new Promise(r => setTimeout(r, 2500))]); } catch (e) {}
-  Object.keys(ET).forEach(k => prep(ET[k].img, ET[k].w));
-  prep('nave', 64); if (IMG.nave) { const c = document.createElement('canvas'); c.width = IMG.nave.width; c.height = IMG.nave.height; const x = c.getContext('2d'); x.drawImage(IMG.nave, 0, 0); const id = x.getImageData(0, 0, c.width, c.height), d = id.data; for (let i = 0; i < d.length; i += 4) { const r = d[i], b = d[i + 2]; d[i] = Math.min(255, b * 1.05); d[i + 1] = d[i + 1] * 0.85; d[i + 2] = r * 0.8; } x.putImageData(id, 0, 0); IMG.nave2 = c; prep('nave2', 64); } prep('tren', 30); prep('uva', 34); prep('uva-dorada', 42); ['pw-doble', 'pw-escudo', 'pw-misil', 'pw-vida', 'pw-bomba'].forEach(p => prep(p, 40));
+  Object.keys(ET).forEach(k => { prep(ET[k].img, ET[k].w); const im = IMG[ET[k].img]; if (!im) return; const c = document.createElement('canvas'); c.width = im.width; c.height = im.height; const x = c.getContext('2d'); x.drawImage(im, 0, 0); const id = x.getImageData(0, 0, c.width, c.height), d = id.data; for (let i = 0; i < d.length; i += 4) { const r = d[i], g = d[i + 1], b = d[i + 2]; d[i] = Math.min(255, b * 1.1 + 30); d[i + 1] = r * 0.7; d[i + 2] = Math.min(255, g * 1.15); } x.putImageData(id, 0, 0); IMG[ET[k].img + '-mini'] = c; prep(ET[k].img + '-mini', Math.round(ET[k].w * 2.5)); });
+  prep('nave', 64); if (IMG.nave) { const c = document.createElement('canvas'); c.width = IMG.nave.width; c.height = IMG.nave.height; const x = c.getContext('2d'); x.drawImage(IMG.nave, 0, 0); const id = x.getImageData(0, 0, c.width, c.height), d = id.data; for (let i = 0; i < d.length; i += 4) { const r = d[i], b = d[i + 2]; d[i] = Math.min(255, b * 1.05); d[i + 1] = d[i + 1] * 0.85; d[i + 2] = r * 0.8; } x.putImageData(id, 0, 0); IMG.nave2 = c; prep('nave2', 64); } prep('tren', 30); prep('bomba', 24); prep('mina-vendimia', 46); prep('uva', 34); prep('uva-dorada', 42); ['pw-doble', 'pw-escudo', 'pw-misil', 'pw-vida', 'pw-bomba'].forEach(p => prep(p, 40));
   makeBullets();
   $('menu').style.backgroundImage = `url(${url('portada')})`; $('taller').style.backgroundImage = `url(${url('taller')})`;
   preload(['portada', 'taller', 'prologo-01', 'prologo-02', 'gameover-caida', 'cara-chispa-derrota', 'cara-tito-derrota', 'cara-bichi-derrota', 'cara-reina-burla']);
-  toMenu(); updInstall();
-  if (QS.get('sala')) coopJoin(QS.get('sala'));
+  if (QS.get('sala')) { NET.only = true; coopJoin(QS.get('sala')); } else { toMenu(); updInstall(); }
   requestAnimationFrame(frame);
 })();
 window.__puelche = { get G() { return G; }, get PL() { return PL; }, startLevel, S, playComic, hurtPlayer: () => G && hurtPlayer(PL[0]), gameOver };
