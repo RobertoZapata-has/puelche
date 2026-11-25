@@ -108,8 +108,9 @@ const THEMES = {
   l3: theme({ seed: 47, bpm: 142, root: 45, prog: [0, 1, -2, 0], minor: 1, dens: 0.7, bass: 'xx.xx.x.xx.xx.xo', kick: 'x...x...x...x...', snare: '....x.......x.x.', hat: 1 }),
   l4: theme({ seed: 59, bpm: 148, root: 47, prog: [0, -4, -5, -2], minor: 1, dens: 0.8, bass: 'x.xox.xox.xox.xo', kick: 'x...x...x...x.x.', snare: '....x.......x...', hat: 1 }),
   boss: theme({ seed: 83, bpm: 162, root: 45, prog: [0, 1, 0, -1], minor: 1, dens: 0.85, bass: 'xoxoxoxoxoxoxoxo', kick: 'x.x.x.x.x.x.x.x.', snare: '....x.......x...', hat: 1 }),
-  historia: theme({ soft: 1, seed: 101, bpm: 76, root: 50, prog: [0, -4, -2, -5], minor: 1, dens: 0.4, bass: 'x.......x...x...', kick: '................', snare: '................', hat: 0 }),
-  final: theme({ soft: 1, seed: 17, bpm: 96, root: 55, prog: [0, 5, 7, 5], minor: 0, dens: 0.6, bass: 'x...x.o.x...x.o.', kick: 'x.......x.......', snare: '....x.......x...', hat: 1 }),
+  epica: theme({ soft: 1, style: 'epic', seed: 101, bpm: 100, root: 50, prog: [0, -4, 3, -2], q: ['m', 'M', 'M', 'M'], minor: 1, dens: 0.55, bass: '', kick: '', snare: '', hat: 0 }),
+  oscuro: theme({ soft: 1, style: 'dark', seed: 29, bpm: 60, root: 45, prog: [0, 1, 0, 6], q: ['m', 'M', 'm', 'd'], minor: 1, dens: 0.3, bass: '', kick: '', snare: '', hat: 0 }),
+  final: theme({ soft: 1, style: 'final', seed: 17, bpm: 96, root: 55, prog: [0, 5, 7, 5], q: ['M', 'M', 'M', 'M'], minor: 0, dens: 0.6, bass: '', kick: '', snare: '', hat: 0 }),
   l5: theme({ seed: 61, bpm: 120, root: 46, prog: [0, 1, -2, -4], minor: 1, dens: 0.6, bass: 'x..x..x...x..x.o', kick: 'x.....x...x.....', snare: '....x.......x...', hat: 1 }),
   l6: theme({ seed: 71, bpm: 150, root: 53, prog: [0, -2, -4, -2], minor: 0, dens: 0.7, bass: 'x.o.x.o.x.o.x.o.', kick: 'x...x...x...x...', snare: '....x.......x...', hat: 1 }),
   l7: theme({ seed: 91, bpm: 168, root: 57, prog: [0, 5, 3, -2], minor: 0, dens: 0.9, bass: 'xoxoxoxoxoxoxoxo', kick: 'x...x...x...x...', snare: '....x.......x...', hat: 1 }),
@@ -134,7 +135,7 @@ function kick(t) { const o = AC.createOscillator(), g = AC.createGain(); o.frequ
 function softBus() {
   if (M.sb) return M.sb;
   const g = AC.createGain(), lp = AC.createBiquadFilter(), d = AC.createDelay(1), fb = AC.createGain(), wet = AC.createGain();
-  lp.type = 'lowpass'; lp.frequency.value = 1700; lp.Q.value = 0.4; d.delayTime.value = 0.36; fb.gain.value = 0.35; wet.gain.value = 0.4;
+  lp.type = 'lowpass'; lp.frequency.value = 2200; lp.Q.value = 0.4; M.sbLP = lp; d.delayTime.value = 0.36; fb.gain.value = 0.35; wet.gain.value = 0.4;
   g.connect(lp); lp.connect(M.g); lp.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(M.g);
   return M.sb = g;
 }
@@ -144,12 +145,37 @@ function sv(f, t, dur, type, vol, att, det, dest) {
   g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + att); g.gain.setTargetAtTime(0.0001, t + att, dur / 3);
   o.connect(g); g.connect(dest); o.start(t); o.stop(t + att + dur * 1.8);
 }
+function timp(t, f, v) {
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine';
+  o.frequency.setValueAtTime(f * 1.6, t); o.frequency.exponentialRampToValueAtTime(f, t + 0.12);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.8);
+  o.connect(g); g.connect(M.g); o.start(t); o.stop(t + 0.85); mnoise(t, 0.08, v * 0.25, 250);
+}
+function thump(t, v) {
+  const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine';
+  o.frequency.setValueAtTime(75, t); o.frequency.exponentialRampToValueAtTime(38, t + 0.18);
+  g.gain.setValueAtTime(v, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  o.connect(g); g.connect(M.g); o.start(t); o.stop(t + 0.32);
+}
 function playSoft(th, step, t, sp) {
-  const bus = softBus(), bar = Math.floor(step / 16) % th.prog.length, s = step % 16, cr = th.root + th.prog[bar], ch = th.minor ? [0, 3, 7] : [0, 4, 7];
-  if (s === 0) { const L = sp * 16; ch.forEach(n => { sv(mf(cr + 12 + n), t, L, 'sawtooth', 0.014, 0.6, -8, bus); sv(mf(cr + 12 + n), t, L, 'sawtooth', 0.014, 0.6, 8, bus); }); sv(mf(cr - 12), t, L * 0.6, 'sine', 0.2, 0.08, 0, bus); }
-  if (s === 8) sv(mf(cr - 5), t, sp * 8, 'sine', 0.12, 0.08, 0, bus);
-  if (th === THEMES.final && s % 4 === 0) sv(mf(cr + 12 + ch[(s / 4) % 3]), t, sp * 3, 'triangle', 0.04, 0.01, 0, bus);
-  const m = th.mel[step % 64]; if (m != null) { sv(mf(cr + 24 + m), t, sp * 4, 'triangle', 0.075, 0.012, 0, bus); sv(mf(cr + 36 + m), t, sp * 2.5, 'sine', 0.03, 0.006, 0, bus); }
+  const bus = softBus(), bi = Math.floor(step / 16) % th.prog.length, s = step % 16, cr = th.root + th.prog[bi], L = sp * 16;
+  const ch = { m: [0, 3, 7], M: [0, 4, 7], d: [0, 3, 6] }[(th.q || [])[bi] || (th.minor ? 'm' : 'M')];
+  const m = th.mel[step % 64];
+  if (s === 0) M.sbLP.frequency.setTargetAtTime(th.style === 'dark' ? 1000 : 2600, t, 0.4);
+  if (th.style === 'dark') {
+    if (s === 0) { sv(mf(cr - 24), t, L, 'sawtooth', 0.035, 1.4, -7, bus); sv(mf(cr - 24), t, L, 'sawtooth', 0.035, 1.4, 7, bus); sv(mf(cr - 12), t, L, 'sine', 0.16, 0.8, 0, bus); ch.forEach(n => sv(mf(cr + n), t, L, 'triangle', 0.022, 1.6, 0, bus)); }
+    if (s === 0) thump(t, 0.32); if (s === 3) thump(t, 0.2);
+    if (s === 8 && bi % 2 === 0) sv(mf(cr + 30), t, sp * 12, 'sine', 0.05, 0.01, 0, bus);
+    if (m != null && s % 4 === 2) sv(mf(cr + 12 + m), t, sp * 8, 'sine', 0.045, 0.5, 0, bus);
+    if (bi === 3 && s === 10) mnoise(t, 1.6, 0.08, 60);
+    return;
+  }
+  if (s === 0) { ch.forEach(n => { sv(mf(cr + 12 + n), t, L, 'sawtooth', 0.015, 0.35, -8, bus); sv(mf(cr + 12 + n), t, L, 'sawtooth', 0.015, 0.35, 8, bus); }); sv(mf(cr - 12), t, L * 0.6, 'sine', 0.22, 0.05, 0, bus); }
+  if (s % 2 === 0) sv(mf(cr + (s % 4 === 2 ? 7 : 0)), t, sp * 1.6, 'sawtooth', 0.032, 0.008, 0, bus);
+  if (s === 0 || s === 6 || s === 10) ch.forEach(n => sv(mf(cr + 12 + n), t, sp * 2.5, 'sawtooth', 0.026, 0.02, 0, bus));
+  if (s === 0 || s === 8) timp(t, mf(cr - 12), 0.4);
+  if (th.style === 'epic' && bi === 3 && s >= 12) timp(t, mf(cr - 12), 0.22);
+  if (m != null) { sv(mf(cr + 24 + m), t, sp * 3, 'sawtooth', 0.026, 0.03, 0, bus); sv(mf(cr + 24 + m), t, sp * 3, 'triangle', 0.06, 0.02, 0, bus); }
 }
 function playStep(th, step, t, sp) {
   if (th.soft) return playSoft(th, step, t, sp);
@@ -287,33 +313,33 @@ const upLv = id => S.up[id] | 0;
 const COMICS = {
   prologo: { title: 'PRÓLOGO', panels: [
     { img: 'prologo-01', cap: 'Mendoza, año 2189. Hace años que no nieva en la cordillera.' },
-    { img: 'prologo-02', cap: 'Con el calor, los glaciares se derritieron… y dejaron salir algo que llevaba miles de años congelado.', sfx: { t: 'CRAC…', x: 58, y: 12, r: -6 } },
-    { img: 'prologo-03', cap: 'Esa noche, el enjambre bajó de la cordillera.', sfx: { t: 'BZZZZZ', x: 6, y: 68, r: -10 } },
-    { img: 'prologo-04', cap: 'Al amanecer, los viñedos de Luján ya no eran viñedos.', bub: { who: 'VIÑATERO', t: '¡Rajemos, compadre!', left: 1 } },
+    { img: 'prologo-02', dark: 1, cap: 'Con el calor, los glaciares se derritieron… y dejaron salir algo que llevaba miles de años congelado.', sfx: { t: 'CRAC…', x: 58, y: 12, r: -6 } },
+    { img: 'prologo-03', dark: 1, cap: 'Esa noche, el enjambre bajó de la cordillera.', sfx: { t: 'BZZZZZ', x: 6, y: 68, r: -10 } },
+    { img: 'prologo-04', dark: 1, cap: 'Al amanecer, los viñedos de Luján ya no eran viñedos.', bub: { who: 'VIÑATERO', t: '¡Rajemos, compadre!', left: 1 } },
     { img: 'prologo-05', cap: 'Laboratorio de la Dra. Nahir Ozán.', bub: { who: 'DRA. OZÁN', t: 'Son insectos prehistóricos… y el agua del deshielo los hace crecer.' } },
     { img: 'prologo-06', cap: 'Un hangar olvidado en El Plumerillo.', bub: { who: 'DON TITO', t: 'Veinte años esperándote, Puelche.', left: 1 }, sfx: { t: 'FSSSHH', x: 60, y: 8, r: 6 } },
     { img: 'prologo-07', bub: { who: 'CHISPA', t: '¿Así que esta es la nave que nadie se anima a volar?' } },
     { img: 'prologo-08', cap: 'Y un polizón.', bub: { who: 'BICHI', t: '¡No me pises! ¡Soy de los buenos!' }, sfx: { t: '¡¿EH?!', x: 4, y: 6, r: -8 } },
-    { img: 'prologo-09', cap: 'Bajo el hielo del Aconcagua, alguien más despertó.', bub: { who: 'LA REINA', t: 'Que vengan. Mi enjambre tiene hambre.' } },
+    { img: 'prologo-09', dark: 1, cap: 'Bajo el hielo del Aconcagua, alguien más despertó.', bub: { who: 'LA REINA', t: 'Que vengan. Mi enjambre tiene hambre.' } },
     { img: 'prologo-10', cap: 'Y la Puelche despegó.', bub: { who: 'DON TITO', t: '¡Traémela entera, nena!', left: 1 }, sfx: { t: '¡BRRROOOM!', x: 30, y: 6, r: -6 } },
   ] },
   entre1: { title: 'DESPUÉS DE LOS VIÑEDOS', panels: [
     { img: 'entre-1-01', cap: 'De vuelta en el hangar.', bub: { who: 'DON TITO', t: '¡Mirá cómo me la dejaste! Esto es baba de polilla.', left: 1 } },
     { img: 'entre-1-02', cap: 'Adentro de la Madre Polilla, la doctora encontró algo.', bub: { who: 'DRA. OZÁN', t: 'Este cristal vibra… y la señal viene de la cordillera.' }, sfx: { t: 'VRRRM', x: 60, y: 10, r: 8 } },
-    { img: 'entre-1-03', cap: 'Mientras tanto, una manga de langostas avanzaba sobre la ciudad.', bub: { who: 'LA REINA', t: 'Es hora de visitar la ciudad.' } },
+    { img: 'entre-1-03', dark: 1, cap: 'Mientras tanto, una manga de langostas avanzaba sobre la ciudad.', bub: { who: 'LA REINA', t: 'Es hora de visitar la ciudad.' } },
   ] },
   c2: { title: 'DESPUÉS DE LA CIUDAD', panels: [
     { img: 'entre-2-01', cap: 'La ciudad festejó como nunca.', bub: { who: 'LA GENTE', t: '¡Puel-che! ¡Puel-che! ¡Puel-che!' } },
-    { img: 'entre-2b', cap: 'Pero La Reina no se iba a quedar quieta.', bub: { who: 'LA REINA', t: '¿Festejan? Que se los lleve el viento.' }, sfx: { t: '¡FIUUUU!', x: 6, y: 8, r: -8 } },
+    { img: 'entre-2b', dark: 1, cap: 'Pero La Reina no se iba a quedar quieta.', bub: { who: 'LA REINA', t: '¿Festejan? Que se los lleve el viento.' }, sfx: { t: '¡FIUUUU!', x: 6, y: 8, r: -8 } },
     { img: 'especial-zonda', cap: 'Bajó el Zonda. Con la tierra no se ve nada… y el enjambre aprovecha.', bub: { who: 'CHISPA', t: '¡Luces prendidas, Puelche! ¡Vamos a ciegas!', left: 1 } },
   ] },
   c3: { title: 'DESPUÉS DEL ZONDA', panels: [
     { img: 'entre-3b', cap: 'A la mañana, Mendoza amaneció tapada de tierra.', bub: { who: 'DON TITO', t: '¡Tierra hasta en los tornillos! Ni el Zonda del 2050 fue así.', left: 1 } },
     { img: 'entre-2-02', cap: 'Bichi tenía algo importante que decir.', bub: { who: 'BICHI', t: '¡Toman agua del dique! ¡Así se ponen gigantes!', left: 1 } },
-    { img: 'entre-2-03', cap: 'Esa noche, en Potrerillos…', sfx: { t: 'BZZZZZZ', x: 40, y: 8, r: -5 } },
+    { img: 'entre-2-03', dark: 1, cap: 'Esa noche, en Potrerillos…', sfx: { t: 'BZZZZZZ', x: 40, y: 8, r: -5 } },
   ] },
   c4: { title: 'DESPUÉS DEL DIQUE', panels: [
-    { img: 'entre-3-01', cap: 'La Puelche no salió entera de Potrerillos.', bub: { who: 'BICHI', t: '¡Arriba, Chispa! ¡Arriba!' }, sfx: { t: '¡PUM!', x: 64, y: 8, r: 8 } },
+    { img: 'entre-3-01', dark: 1, cap: 'La Puelche no salió entera de Potrerillos.', bub: { who: 'BICHI', t: '¡Arriba, Chispa! ¡Arriba!' }, sfx: { t: '¡PUM!', x: 64, y: 8, r: 8 } },
     { img: 'entre-3-02', cap: 'Don Tito llegó de noche, con la camioneta y una caja de herramientas.', bub: { who: 'DON TITO', t: 'Tomá. Me lo dieron cuando volaba los antigranizo. Nunca me falló.', left: 1 } },
     { img: 'entre-3-03', bub: { who: 'DRA. OZÁN', t: 'La señal sale del Aconcagua. Pero el único camino pasa por los Caracoles.', left: 1 } },
   ] },
@@ -324,7 +350,7 @@ const COMICS = {
   c6: { title: 'HACIA EL ACONCAGUA', panels: [
     { img: 'entre-6', cap: 'Puente del Inca. La carga llegó entera.', bub: { who: 'CHISPA', t: 'Ahora sí, Reina. Vamos por vos.' } },
     { img: 'entre-4-01', cap: 'Al amanecer, rumbo al techo de América.' },
-    { img: 'entre-4-02', cap: 'La Reina intentó recuperar a Bichi.', bub: { who: 'CHISPA', t: '¡Bichi! ¡No la escuches! ¡Quedate conmigo!', left: 1 } },
+    { img: 'entre-4-02', dark: 1, cap: 'La Reina intentó recuperar a Bichi.', bub: { who: 'CHISPA', t: '¡Bichi! ¡No la escuches! ¡Quedate conmigo!', left: 1 } },
     { img: 'entre-4-03', cap: 'Bichi eligió su lado.', bub: { who: 'BICHI', t: 'Yo soy de Mendoza. La colmena es por ahí.' } },
   ] },
   espV: { title: 'VENDIMIA BONUS', panels: [{ img: 'especial-vendimia', cap: 'Noche de Vendimia: ¡a juntar todas las uvas antes del amanecer!', bub: { who: 'BICHI', t: '¡Ojo con los cajones de dinamita! Y las doradas valen un montón.', left: 1 }, sfx: { t: '¡PUM PUM!', x: 6, y: 8, r: -8 } }] },
@@ -333,7 +359,7 @@ const COMICS = {
     { img: 'final-02', cap: 'Y por primera vez en años, volvió a nevar en la cordillera.' },
     { img: 'final-03', cap: 'Semanas después, en Luján de Cuyo…', bub: { who: 'VIÑATERO', t: '¡Brotaron! ¡Las viñas brotaron!' } },
     { img: 'final-04', bub: { who: 'DON TITO', t: 'Bueno… no estuvo tan mal, nena.', left: 1 }, sfx: { t: '¡SALUD!', x: 60, y: 8, r: 7 } },
-    { img: 'final-05', cap: 'Lejos, muy lejos, en otro glaciar…', sfx: { t: 'crac', x: 62, y: 70, r: -4 } },
+    { img: 'final-05', dark: 1, cap: 'Lejos, muy lejos, en otro glaciar…', sfx: { t: 'crac', x: 62, y: 70, r: -4 } },
   ] },
 };
 
@@ -1034,7 +1060,8 @@ cv.addEventListener('pointerdown', e => {
 cv.addEventListener('pointermove', e => { const pl = PL.find(q => q.drag && q.drag.id === e.pointerId); if (!pl) return; const d = pl.drag, p = toLogical(e); d.tx = clamp(d.px + (p.x - d.sx) * 1.3, 22, W - 22); d.ty = clamp(d.py + (p.y - d.sy) * 1.3, 70, H - 56); });
 const endDrag = e => { PL.forEach(q => { if (q.drag && q.drag.id === e.pointerId) q.drag = null; }); };
 cv.addEventListener('pointerup', endDrag); cv.addEventListener('pointercancel', endDrag);
-document.addEventListener('visibilitychange', () => { if (document.hidden && G && G.running && !G.paused && !G.remote) togglePause(); save(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden && G && G.running && !G.paused && !G.remote) togglePause(); if (document.hidden) saveResume(); save(); });
+addEventListener('pagehide', () => saveResume());
 
 /* ---------- Loop ---------- */
 let last = performance.now();
@@ -1042,11 +1069,13 @@ function frame(now) {
   const dt = Math.min(0.033, (now - last) / 1000); last = now;
   if (G && G.running) { if (!G.paused) { if (G.remote) guestUpdate(dt); else update(dt); } render(); }
   if (NET.role === 'h') hostTick(now);
+  if (G && G.running && !G.paused && now - lastResume > 3000) { lastResume = now; saveResume(); }
   requestAnimationFrame(frame);
 }
 
 /* ---------- Flow ---------- */
 function startLevel(lv, cp = 0, opt = {}) {
+  S.resume = null;
   hideAll(); placeButtons(); if (BOSSES[lv]) prep(BOSSES[lv].img, BOSSES[lv].w);
   newGame(lv, cp, opt); G.stateClock = 0; last = performance.now(); M.hold = false;
   if (G.state !== 'bosswarn') playMusic(LEVELS[lv].mus);
@@ -1075,14 +1104,33 @@ function renderHangar() {
 $('hgList').addEventListener('click', e => { const b = e.target.closest('button'); if (!b || b.disabled || !HG) return; const id = b.dataset.p || b.dataset.m, it = HG.items.find(x => x.id === id); HG.cart[id] = clamp((HG.cart[id] || 0) + (b.dataset.p ? 1 : -1), 0, it.max); tone(b.dataset.p ? 880 : 440, 0.05, 'square', 0.04); renderHangar(); });
 $('hgGo').onclick = () => { if (!HG) return; audioOn(); const tot = hgTotal(); if (tot > S.coins) return; S.coins -= tot; const load = Object.assign({}, HG.cart); S.lastLoad = load; save(); const f = HG.onGo; HG = null; f(load); };
 $('hgBack').onclick = () => { const f = HG && HG.onBack; HG = null; f ? f() : toMenu(); };
+let lastResume = 0;
+function saveResume() {
+  if (!G || G.coop || G.remote || !G.running || G.state === 'dead' || G.state === 'won') return;
+  const bossy = G.boss || G.state === 'bosswarn';
+  S.resume = { lv: G.lv, mode: G.mode, daily: G.daily, cp: bossy ? parts(G.L) : G.part, t: bossy || G.state !== 'waves' ? 0 : +G.t.toFixed(1),
+    score: G.score, lives: G.lives, bombs: G.bombs, coinsRun: G.coinsRun, contN: G.contN, aliveT: G.aliveT, grapes: G.grapes,
+    tr: G.train ? G.train.hp : 0, P: PL.map(p => [p.shot, p.shield, p.shieldT, p.missileT, p.loops]), at: Date.now() };
+  save();
+}
+function resumeGame() {
+  const R = S.resume; if (!R) return; audioOn();
+  startLevel(R.lv, R.cp, { mode: R.mode, daily: R.daily, contN: R.contN });
+  Object.assign(G, { score: R.score, lives: R.lives, bombs: R.bombs, coinsRun: R.coinsRun, aliveT: R.aliveT || 0, grapes: R.grapes || 0 });
+  if (R.t && G.state !== 'bosswarn') { G.t = R.t; G.heavy = G.heavy.filter(h => h * G.L.len > R.t + 2); }
+  if (G.train && R.tr) G.train.hp = R.tr;
+  (R.P || []).forEach((a, i) => { const p = PL[i]; if (p) [p.shot, p.shield, p.shieldT, p.missileT, p.loops] = a; });
+  G.banner = { t1: '¡SEGUIMOS!', t2: G.L.name, life: 2.2, age: 0 }; S.resume = R; save();
+}
 function togglePause() {
   if (!G || !G.running || G.state === 'dead' || G.state === 'won') return;
   G.paused = !G.paused; PL.forEach(q => q.drag = null);
   M.hold = G.paused; if (G.coop) nsend({ t: 'pause', on: G.paused ? 1 : 0 });
   $('pRestart').classList.toggle('hidden', !!G.coop);
-  if (G.paused) { $('pMute').textContent = 'SONIDO: ' + (S.mute ? 'NO' : 'SÍ'); show('pause'); save(); } else hideAll();
+  if (G.paused) { $('pMute').textContent = 'SONIDO: ' + (S.mute ? 'NO' : 'SÍ'); show('pause'); saveResume(); } else hideAll();
 }
 function finishLevel() {
+  S.resume = null;
   G.running = false; const lv = G.lv, L = G.L;
   $('wShop').classList.remove('hidden'); $('wMenu').textContent = 'MENÚ';
   if (G.coop) {
@@ -1107,6 +1155,7 @@ function finishLevel() {
 }
 let contTimer = null;
 function gameOver() {
+  S.resume = null;
   G.running = true; G.paused = true; save(); playMusic('over');
   const lv = G.lv, mode = G.mode, daily = G.daily, L = G.L, B = BOSSES[lv], who = pick(Object.keys(OVER_LINES)), O = OVER_LINES[who];
   const img = $('ovimg'); img.classList.remove('color'); img.src = url('gameover-caida');
@@ -1149,7 +1198,7 @@ let comic = null;
 function playComic(id, done) {
   if (G) G.running = false;
   const C = COMICS[id]; preload(C.panels.map(p => p.img)); S.seen[id] = true; save();
-  comic = { C, i: -1, done, step: 0 }; playMusic(id === 'final' ? 'final' : 'historia');
+  comic = { C, id, i: -1, done, step: 0 };
   $('cdots').innerHTML = C.panels.map(() => '<i></i>').join('');
   $('ctitle').textContent = C.title;
   show('comic'); nextPanel();
@@ -1160,6 +1209,7 @@ function nextPanel() {
   c.i++;
   if (c.i >= c.C.panels.length) { const d = c.done; comic = null; d && d(); return; }
   const p = c.C.panels[c.i];
+  playMusic(p.dark ? 'oscuro' : c.id === 'final' ? 'final' : 'epica');
   $('ctitle').style.display = c.i === 0 ? '' : 'none';
   [...$('cdots').children].forEach((d, i) => d.classList.toggle('on', i <= c.i));
   const img = $('cimg'); img.classList.remove('on'); void img.offsetWidth; img.src = url(p.img); img.classList.add('on');
@@ -1180,7 +1230,9 @@ $('cnext').addEventListener('click', () => { audioOn(); nextPanel(); });
 $('cskip').addEventListener('click', () => { if (!comic) return; const d = comic.done; clearTimeout(comic.tm); comic = null; d && d(); });
 
 /* ---------- Menus ---------- */
-function toMenu() { if (NET.only) { guestOver(); return; } if (S.refund) { const r = S.refund; delete S.refund; save(); setTimeout(() => toast('Don Tito te devolvió ' + r + ' monedas'), 400); } if (G) { G.running = false; } M.hold = false; playMusic('menu'); clearInterval(contTimer); $('menucoins').textContent = '● ' + S.coins + ' monedas'; $('bPlay').textContent = 'MODO HISTORIA'; const di = dailyInfo(); $('bDaily').textContent = 'DESAFÍO ' + ((S.daily || {}).done === di.key ? '✓' : '★'); $('mute').textContent = S.mute ? '✕' : '♪'; show('menu'); }
+function toMenu() { if (NET.only) { guestOver(); return; } if (S.refund) { const r = S.refund; delete S.refund; save(); setTimeout(() => toast('Don Tito te devolvió ' + r + ' monedas'), 400); } if (G) { G.running = false; } M.hold = false; playMusic('menu'); clearInterval(contTimer); $('menucoins').textContent = '● ' + S.coins + ' monedas'; $('bPlay').textContent = 'MODO HISTORIA';
+  const R = S.resume; $('bResume').classList.toggle('hidden', !R);
+  if (R) $('bResume').textContent = 'CONTINUAR PARTIDA · ' + (R.lv < NSTORY ? 'NIVEL ' + (R.lv + 1) : LEVELS[R.lv].name.toUpperCase()) + (R.cp >= parts(LEVELS[R.lv]) ? ' · JEFE' : parts(LEVELS[R.lv]) > 1 ? ' · PARTE ' + (R.cp + 1) : ''); const di = dailyInfo(); $('bDaily').textContent = 'DESAFÍO ' + ((S.daily || {}).done === di.key ? '✓' : '★'); $('mute').textContent = S.mute ? '✕' : '♪'; show('menu'); }
 $('bPlay').onclick = () => {
   audioOn(); const top = Math.min(NSTORY, S.unlocked) - 1;
   if (top <= 0) return startStory(0);
@@ -1210,8 +1262,30 @@ $('mute').onclick = () => { S.mute = !S.mute; save(); $('mute').textContent = S.
 $('pResume').onclick = () => { if (G && G.remote) nsend({ t: 'unpause' }); else togglePause(); };
 $('pRestart').onclick = () => { go(G.lv, 0, { mode: G.mode, daily: G.daily }); };
 $('pMute').onclick = () => { S.mute = !S.mute; save(); $('pMute').textContent = 'SONIDO: ' + (S.mute ? 'NO' : 'SÍ'); };
-$('pMenu').onclick = () => { if (G && G.coop) leaveCoop(); else toMenu(); };
+$('pMenu').onclick = () => { S.resume = null; save(); if (G && G.coop) leaveCoop(); else toMenu(); };
 $('fMenu').onclick = toMenu;
+$('bResume').onclick = resumeGame;
+/* ---------- Tecla atrás de Android ---------- */
+function backTrap() { try { history.pushState({ pu: 1 }, ''); } catch (e) {} }
+let exitArm = 0;
+addEventListener('popstate', () => {
+  const vis = id => !$(id).classList.contains('hidden');
+  if (vis('menu') || (NET.only && vis('coopEnd'))) {
+    if (Date.now() < exitArm) return;
+    exitArm = Date.now() + 2000; toast('Tocá atrás otra vez para salir'); setTimeout(() => { if (Date.now() >= exitArm) backTrap(); }, 2100); return;
+  }
+  backTrap();
+  if (vis('loading')) return;
+  if (G && G.running && !G.paused && screens.every(id => !vis(id))) { actPause(); return; }
+  if (vis('pause')) { $('pResume').onclick(); return; }
+  if (vis('comic')) { $('cskip').click(); return; }
+  if (vis('hangar')) { $('hgBack').click(); return; }
+  if (vis('taller')) { $('tBack').click(); return; }
+  if (vis('confirm')) { $('cfNo').click(); return; }
+  if (vis('record')) { $('recOk').click(); return; }
+  if (vis('coop') || vis('coopEnd')) { if (!NET.only) $('coopLeave').click(); return; }
+  toMenu();
+});
 document.addEventListener('pointerdown', () => audioOn(), { passive: true });
 /* ---------- Récords y desafío del día ---------- */
 const dayKey = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -1583,6 +1657,7 @@ $('coopCopy').onclick = async () => { const u = $('coopLink').value; let ok = fa
   $('menu').style.backgroundImage = `url(${url('portada')})`; $('taller').style.backgroundImage = `url(${url('taller')})`; $('hangar').style.backgroundImage = `url(${url('taller')})`;
   preload(['portada', 'taller', 'prologo-01', 'prologo-02', 'gameover-caida', 'cara-chispa-derrota', 'cara-tito-derrota', 'cara-bichi-derrota', 'cara-reina-burla']);
   if (QS.get('sala')) { NET.only = true; coopJoin(QS.get('sala')); } else { toMenu(); updInstall(); }
+  backTrap();
   requestAnimationFrame(frame);
 })();
 window.__puelche = { get G() { return G; }, get PL() { return PL; }, startLevel, S, playComic, hurtPlayer: () => G && hurtPlayer(PL[0]), gameOver };
