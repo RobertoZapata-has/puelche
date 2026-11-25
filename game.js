@@ -108,8 +108,8 @@ const THEMES = {
   l3: theme({ seed: 47, bpm: 142, root: 45, prog: [0, 1, -2, 0], minor: 1, dens: 0.7, bass: 'xx.xx.x.xx.xx.xo', kick: 'x...x...x...x...', snare: '....x.......x.x.', hat: 1 }),
   l4: theme({ seed: 59, bpm: 148, root: 47, prog: [0, -4, -5, -2], minor: 1, dens: 0.8, bass: 'x.xox.xox.xox.xo', kick: 'x...x...x...x.x.', snare: '....x.......x...', hat: 1 }),
   boss: theme({ seed: 83, bpm: 162, root: 45, prog: [0, 1, 0, -1], minor: 1, dens: 0.85, bass: 'xoxoxoxoxoxoxoxo', kick: 'x.x.x.x.x.x.x.x.', snare: '....x.......x...', hat: 1 }),
-  historia: theme({ seed: 101, bpm: 84, root: 50, prog: [0, -4, -2, -5], minor: 1, dens: 0.45, bass: 'x.......x...x...', kick: '................', snare: '................', hat: 0 }),
-  final: theme({ seed: 17, bpm: 112, root: 55, prog: [0, 5, 7, 5], minor: 0, dens: 0.7, bass: 'x...x.o.x...x.o.', kick: 'x.......x.......', snare: '....x.......x...', hat: 1 }),
+  historia: theme({ soft: 1, seed: 101, bpm: 76, root: 50, prog: [0, -4, -2, -5], minor: 1, dens: 0.4, bass: 'x.......x...x...', kick: '................', snare: '................', hat: 0 }),
+  final: theme({ soft: 1, seed: 17, bpm: 96, root: 55, prog: [0, 5, 7, 5], minor: 0, dens: 0.6, bass: 'x...x.o.x...x.o.', kick: 'x.......x.......', snare: '....x.......x...', hat: 1 }),
   l5: theme({ seed: 61, bpm: 120, root: 46, prog: [0, 1, -2, -4], minor: 1, dens: 0.6, bass: 'x..x..x...x..x.o', kick: 'x.....x...x.....', snare: '....x.......x...', hat: 1 }),
   l6: theme({ seed: 71, bpm: 150, root: 53, prog: [0, -2, -4, -2], minor: 0, dens: 0.7, bass: 'x.o.x.o.x.o.x.o.', kick: 'x...x...x...x...', snare: '....x.......x...', hat: 1 }),
   l7: theme({ seed: 91, bpm: 168, root: 57, prog: [0, 5, 3, -2], minor: 0, dens: 0.9, bass: 'xoxoxoxoxoxoxoxo', kick: 'x...x...x...x...', snare: '....x.......x...', hat: 1 }),
@@ -131,7 +131,28 @@ function mnoise(t, dur, vol, hp) {
   s.connect(f); f.connect(g); g.connect(M.g); s.start(t, Math.random() * 0.5); s.stop(t + dur + 0.02);
 }
 function kick(t) { const o = AC.createOscillator(), g = AC.createGain(); o.frequency.setValueAtTime(140, t); o.frequency.exponentialRampToValueAtTime(40, t + 0.12); g.gain.setValueAtTime(0.5, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.16); o.connect(g); g.connect(M.g); o.start(t); o.stop(t + 0.18); }
+function softBus() {
+  if (M.sb) return M.sb;
+  const g = AC.createGain(), lp = AC.createBiquadFilter(), d = AC.createDelay(1), fb = AC.createGain(), wet = AC.createGain();
+  lp.type = 'lowpass'; lp.frequency.value = 1700; lp.Q.value = 0.4; d.delayTime.value = 0.36; fb.gain.value = 0.35; wet.gain.value = 0.4;
+  g.connect(lp); lp.connect(M.g); lp.connect(d); d.connect(fb); fb.connect(d); d.connect(wet); wet.connect(M.g);
+  return M.sb = g;
+}
+function sv(f, t, dur, type, vol, att, det, dest) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t); if (det) o.detune.value = det;
+  g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(vol, t + att); g.gain.setTargetAtTime(0.0001, t + att, dur / 3);
+  o.connect(g); g.connect(dest); o.start(t); o.stop(t + att + dur * 1.8);
+}
+function playSoft(th, step, t, sp) {
+  const bus = softBus(), bar = Math.floor(step / 16) % th.prog.length, s = step % 16, cr = th.root + th.prog[bar], ch = th.minor ? [0, 3, 7] : [0, 4, 7];
+  if (s === 0) { const L = sp * 16; ch.forEach(n => { sv(mf(cr + 12 + n), t, L, 'sawtooth', 0.014, 0.6, -8, bus); sv(mf(cr + 12 + n), t, L, 'sawtooth', 0.014, 0.6, 8, bus); }); sv(mf(cr - 12), t, L * 0.6, 'sine', 0.2, 0.08, 0, bus); }
+  if (s === 8) sv(mf(cr - 5), t, sp * 8, 'sine', 0.12, 0.08, 0, bus);
+  if (th === THEMES.final && s % 4 === 0) sv(mf(cr + 12 + ch[(s / 4) % 3]), t, sp * 3, 'triangle', 0.04, 0.01, 0, bus);
+  const m = th.mel[step % 64]; if (m != null) { sv(mf(cr + 24 + m), t, sp * 4, 'triangle', 0.075, 0.012, 0, bus); sv(mf(cr + 36 + m), t, sp * 2.5, 'sine', 0.03, 0.006, 0, bus); }
+}
 function playStep(th, step, t, sp) {
+  if (th.soft) return playSoft(th, step, t, sp);
   const bar = Math.floor(step / 16) % th.prog.length, s = step % 16, cr = th.root + th.prog[bar];
   const b = th.bass[s]; if (b === 'x') mv(mf(cr - 12), t, sp * 1.7, 'triangle', 0.32); else if (b === 'o') mv(mf(cr), t, sp * 1.2, 'triangle', 0.24);
   if (s % 2 === 0) { const ch = th.minor ? [0, 3, 7, 12] : [0, 4, 7, 12]; mv(mf(cr + 12 + ch[(s / 2) % 4]), t, sp * 0.8, 'square', 0.035); }
@@ -1038,7 +1059,6 @@ function openHangar(lv, onGo, onBack, backLabel) {
   if (G) G.running = false; clearInterval(contTimer);
   const items = LEVELS[lv].sp === 'vendimia' ? SHOP.filter(it => it.id === 'escudo' || it.id === 'vida') : SHOP;
   const last = S.lastLoad || {}, cart = {}; let tot = 0;
-  for (const it of items) { const n = Math.min(last[it.id] || 0, it.max); if (n && tot + n * it.cost <= S.coins) { cart[it.id] = n; tot += n * it.cost; } }
   HG = { lv, items, cart, onGo, onBack };
   $('hgLv').textContent = (lv < NSTORY ? 'Nivel ' + (lv + 1) + ': ' : '') + LEVELS[lv].name;
   $('hgFace').style.backgroundImage = `url(${url('cara-tito')})`; $('hgSay').innerHTML = `<em>DON TITO</em>${pick(HANGAR_LINES)}`;
